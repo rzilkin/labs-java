@@ -6,8 +6,10 @@ class MyFirstClass {
             for (int j = 1; j <= 8; j++){
                 o.setFirstVal(i);
                 o.setSecondVal(j);
-                System.out.print(o.max() + " \n");
+                System.out.print(o.max());
+                System.out.print(" ");
             }
+            System.out.println();
         }
     }
 }
