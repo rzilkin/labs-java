@@ -61,4 +61,37 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction {
             }
         }
     }
+
+    @Override
+    public int getCount() {
+        return count;
+    }
+
+    @Override
+    public double leftBound() {
+        return head.x;
+    }
+
+    @Override
+    public double rightBound() {
+        return head.prev.x;
+    }
+
+    private Node getNode(int index) {
+        if (index < count / 2) {
+            Node cur = head;
+            for (int i = 0; i < index; i++) {
+                cur = cur.next;
+            }
+            return cur;
+        }
+        else {
+            Node cur = head.prev;
+            for (int i = count - 1; i > index; ++i) {
+                cur = cur.prev;
+            }
+            return cur;
+        }
+    }
+
 }
