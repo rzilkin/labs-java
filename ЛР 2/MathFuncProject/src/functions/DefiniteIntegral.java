@@ -1,62 +1,59 @@
 package functions;
 /* Утилитный класс для численного вычисления опредённого интеграла
-* методом трапеций с фиксированным шагом.
-* Метод calc(double a, double b, MathFunction function) вычисляет приближённое значение
-* интеграла ∫[a,b] f(x) dx
-*/
+ * методом трапеций с фиксированным шагом.
+ */
 
 
 public class DefiniteIntegral implements MathFunction {
     public static final double INCREMENT = 1E-4;
+
     private double a;
-    private double b;
     private final MathFunction function;
 
-    public DefiniteIntegral(MathFunction function) {
+    public DefiniteIntegral(MathFunction function, double a) {
         this.function = function;
+        this.a = a;
     }
 
     public void setLower(double a) {
         this.a = a;
     }
 
-    public void setUpper(double b) {
-        this.b = b;
-    }
-
-    private double compute(){
+    private double compute(double start, double end){
         // Обработка частных случаев
-        if (Double.isNaN(a) || Double.isNaN(b)) return Double.NaN;
-        if (a == b) return 0.0;
+        if (Double.isNaN(start) || Double.isNaN(end)) return Double.NaN;
+        if (start == end) return 0.0;
 
-        double area = 0;
         double modifier = 1.0;
 
         // Пределы в обратном порядке - меняем пределы местами и знак
-        if (a > b){
-            double tempA = a;
-            a = b;
-            b = tempA;
+        if (start > end){
+            double temp = start;
+            start = end;
+            end = temp;
             modifier = -1.0;
         }
-
+        double width = end - start;
         // Вычислим количество полных шагов (нулевая часть нужна для остатка ниже)
-        int nFullSteps = (int) ((b - a) / INCREMENT);
+        int nFullSteps = (int) (width / INCREMENT);
 
+        double area = 0.0;
         // Основной цикл: проходим по узлам с шагом INCREMENT и складываем площади трапеций.
-        for(double i = a + INCREMENT; i < b; i += INCREMENT ){
-            double dFromA = i - a; // смещение текущего правого узла от начала
-            double left = function.apply(a + dFromA - INCREMENT);
-            double right = function.apply(a + dFromA);
-            area += (INCREMENT / 2.0) * (left + right);
+        for (int k = 1; k <= nFullSteps; k++) {
+            double xPrev = start + (k - 1) * INCREMENT;
+            double xCurr = start + k * INCREMENT;
+            double left = function.apply(xPrev);
+            double right = function.apply(xCurr);
+            area += 0.5 * (left + right) * INCREMENT;
         }
 
-        // Обработка остаточного (короткого) интервала, если (b-a) не кратно INCREMENT
-        double remainder = (b - a)- nFullSteps * INCREMENT;
-        if (remainder > 1e-12){ // Защита от небольших погрешностей
-
-            // Площадь последнецй трапеции
-            area += 0.5 * (function.apply(a + nFullSteps * INCREMENT) + function.apply(b)) * remainder;
+        // Обработка остаточного (короткого) интервала, если (end-start) не кратно INCREMENT
+        double remainder = width- nFullSteps * INCREMENT;
+        if (remainder > 1e-12) { // Защита от небольших погрешностей
+            double xPrev = start + nFullSteps * INCREMENT;
+            double xCurr = end;
+            // Площадь последней трапеции
+            area += 0.5 * (function.apply(xPrev) + function.apply(xCurr)) * remainder;
         }
 
         return area * modifier;
@@ -64,6 +61,6 @@ public class DefiniteIntegral implements MathFunction {
 
     @Override
     public double apply(double x) {
-        return compute();
+        return compute(a, x);
     }
 }
