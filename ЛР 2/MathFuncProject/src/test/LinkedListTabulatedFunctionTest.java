@@ -36,10 +36,10 @@ public class LinkedListTabulatedFunctionTest {
     void testConstructorFromMathFunction() {
         LinkedListTabulatedFunction func = createFunctionWithMathFunction();
         assertEquals(7, func.getCount());
-        assertEquals(1.0, func.leftBound());
-        assertEquals(7.0, func.rightBound());
-        assertEquals(1.0, func.getY(0));
-        assertEquals(25.0, func.getY(4));
+        assertEquals(2.0, func.leftBound());
+        assertEquals(10.0, func.rightBound());
+        assertEquals(4.0, func.getY(0));
+        assertEquals(36.0, func.getY(4));
     }
 
     @Test
