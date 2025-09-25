@@ -1,6 +1,6 @@
 package functions;
 
-public class LinkedListTabulatedFunction extends AbstractTabulatedFunction {
+public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable {
 
     private class Node {
         public Node next;
@@ -60,6 +60,68 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction {
                 addNode(x, source.apply(x));
             }
         }
+    }
+
+    @Override
+    public void insert(double x, double y) {
+        if (head == null) {
+            addNode(x, y);
+            return;
+        }
+
+        Node cur = head;
+        int iter = 0;
+
+        do {
+            if (cur.x == x) {
+                cur.y = y;
+                return;
+            }
+
+            if (x < cur.x) {
+                insertBefore(cur, x, y);
+                if (cur == head) {
+                    head = head.prev;
+                }
+                return;
+            }
+
+            if (cur.next == head || x < cur.next.x) {
+                insertAfter(cur, x, y);
+                return;
+            }
+
+            cur = cur.next;
+            iter++;
+        } while (cur != head && iter < count);
+
+        insertBefore(head, x, y);
+    }
+
+    private void insertAfter(Node node, double x, double y) {
+        Node newNode = new Node();
+        newNode.x = x;
+        newNode.y = y;
+
+        newNode.next = node.next;
+        newNode.prev = node;
+        node.next.prev = newNode;
+        node.next = newNode;
+
+        count++;
+    }
+
+    private void insertBefore(Node node, double x, double y) {
+        Node newNode = new Node();
+        newNode.x = x;
+        newNode.y = y;
+
+        newNode.prev = node.prev;
+        newNode.next = node;
+        node.prev.next = newNode;
+        node.prev = newNode;
+
+        count++;
     }
 
     @Override

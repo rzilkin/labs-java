@@ -263,4 +263,28 @@ public class ArrayTabulatedFunctionTest {
         assertThrows(IllegalArgumentException.class, () -> new TestableArray(f, 0.0, 1.0, 0));
         assertThrows(IllegalArgumentException.class, () -> new TestableArray(f, 0.0, 1.0, -5));
     }
+
+    @Test
+    void testInsert() {
+        double[] xs = {0.0, 1.0, 2.0, 3.0};
+        double[] ys = {1.0, 2.0, 1.0, 1.0};
+        TestableArray t = new TestableArray(xs, ys);
+
+        t.insert(1.5, 2.1);
+        int res1 = t.indexOfX(1.5);
+        assertEquals(2, res1, 1e-6);
+
+        t.insert(-1.0, 1.99);
+        int res2 = t.indexOfX(-1.0);
+        assertEquals(0, res2, 1e-6);
+
+        t.insert(3.7, 2.9);
+        int res3 = t.indexOfX(3.7);
+        assertEquals(6, res3, 1e-6);
+
+        t.insert(1.0, 2.77);
+        int res4 = t.indexOfY(2.77);
+        assertEquals(2, res4, 1e-6);
+
+    }
 }

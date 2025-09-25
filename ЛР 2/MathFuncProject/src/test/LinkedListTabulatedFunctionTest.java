@@ -128,4 +128,19 @@ public class LinkedListTabulatedFunctionTest {
         assertEquals(35.25, res, 1e-6);
     }
 
+    @Test
+    void testInsert() {
+        LinkedListTabulatedFunction func = createFunctionWithArrays();
+        func.insert(4.0, 7.12);
+        double res1 = func.indexOfY(7.12);
+        assertEquals(1, res1, 1e-6);
+        func.insert(13.0, 90);
+        double res2 = func.indexOfY(90);
+        assertEquals(5, res2, 1e-6);
+        func.insert(1.5, 0.52);
+        double res3 = func.indexOfY(0.52);
+        assertEquals(0, res3, 1e-6);
+
+    }
+
 }

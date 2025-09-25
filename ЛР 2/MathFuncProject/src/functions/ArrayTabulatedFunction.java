@@ -4,9 +4,10 @@ import java.util.Objects;
 
 /* Реализация TabulatedFunction на основе двух массивов xValues и yValues.
 * */
-public class ArrayTabulatedFunction extends  AbstractTabulatedFunction{
-    private final double[] xValues;
-    private final double[] yValues;
+public class ArrayTabulatedFunction extends  AbstractTabulatedFunction implements Insertable{
+    private double[] xValues;
+    private double[] yValues;
+    private int count;
 
     public ArrayTabulatedFunction(double[] xValues, double [] yValues){
         Objects.requireNonNull(xValues, "xValues не может быть пустым");
@@ -181,5 +182,49 @@ public class ArrayTabulatedFunction extends  AbstractTabulatedFunction{
         if (index < 0 || index >= getCount()) {
             throw new IndexOutOfBoundsException("Index out of range: " + index);
         }
+    }
+
+    @Override
+    public void insert(double x, double y) {
+        int indexInArray = indexOfX(x);
+        if (indexInArray != -1) {
+            yValues[indexInArray] = y;
+            return;
+        }
+
+        count = xValues.length;
+        int indexForInsert = 0;
+        if (count > 0) {
+            if (x < xValues[0]) {
+                indexForInsert = 0;
+            }
+            else if (x > xValues[count - 1]) {
+                indexForInsert = count;
+            }
+            else {
+                for (int i = 0; i < count - 1; i++) {
+                    if (x > xValues[i] && x < xValues[i + 1]) {
+                        indexForInsert = i + 1;
+                        break;
+                    }
+                }
+            }
+        }
+
+        double[] newXValues = new double[count + 1];
+        double[] newYValues = new double[count + 1];
+
+        System.arraycopy(xValues, 0, newXValues, 0, indexForInsert);
+        System.arraycopy(yValues, 0, newYValues, 0, indexForInsert);
+
+        newXValues[indexForInsert] = x;
+        newYValues[indexForInsert] = y;
+
+        System.arraycopy(xValues, indexForInsert, newXValues, indexForInsert + 1, count - indexForInsert);
+        System.arraycopy(yValues, indexForInsert, newYValues, indexForInsert + 1, count - indexForInsert);
+
+        xValues = newXValues;
+        yValues = newYValues;
+
     }
 }
