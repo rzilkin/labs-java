@@ -4,7 +4,7 @@ import java.util.Objects;
 
 /* Реализация TabulatedFunction на основе двух массивов xValues и yValues.
 * */
-public class ArrayTabulatedFunction extends  AbstractTabulatedFunction implements Insertable{
+public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable{
     private double[] xValues;
     private double[] yValues;
     private int count;
@@ -226,5 +226,33 @@ public class ArrayTabulatedFunction extends  AbstractTabulatedFunction implement
         xValues = newXValues;
         yValues = newYValues;
 
+    }
+
+    @Override
+    public void remove(int index) {
+        // Защита на некорректный индекс
+        if (index < 0 || index >= getCount()) {
+            throw new IndexOutOfBoundsException("Index: " + index);
+        }
+
+        int n = getCount();
+        // Если всего один элемент — делаем таблицу пустой (логический размер = 0)
+        if (n == 1) {
+            setCount(0);
+            return;
+        }
+
+        // Сдвигаем элементы после index влево на 1
+        for (int i = index; i < n - 1; ++i) {
+            xValues[i] = xValues[i + 1];
+            yValues[i] = yValues[i + 1];
+        }
+
+        // Очистим последнюю позицию
+        xValues[n - 1] = 0.0;
+        yValues[n - 1] = 0.0;
+
+        // уменьшаем логический размер
+        setCount(n - 1);
     }
 }

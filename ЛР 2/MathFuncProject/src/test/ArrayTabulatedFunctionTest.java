@@ -10,9 +10,6 @@ public class ArrayTabulatedFunctionTest {
 
     private static final double EPS = 1e-9;
 
-    /**
-     * Test subclass that exposes protected methods for testing.
-     */
     static class TestableArray extends ArrayTabulatedFunction {
         public TestableArray(double[] x, double[] y) {
             super(x, y);
@@ -22,7 +19,6 @@ public class ArrayTabulatedFunctionTest {
             super(source, xFrom, xTo, count);
         }
 
-        // public wrappers to access protected methods
         public int pubFloorIndex(double x) {
             return super.floorIndexOfX(x);
         }
@@ -60,11 +56,9 @@ public class ArrayTabulatedFunctionTest {
         double[] ys = {0.0, 1.0, 4.0};
         TestableArray t = new TestableArray(xs, ys);
 
-        // mutate original arrays
         xs[0] = 999.0;
         ys[0] = 999.0;
 
-        // internal arrays must not be affected (defensive copy)
         assertEquals(0.0, t.getX(0), EPS);
         assertEquals(0.0, t.getY(0), EPS);
     }
@@ -74,13 +68,13 @@ public class ArrayTabulatedFunctionTest {
         double[] good = {0.0};
         assertThrows(NullPointerException.class, () -> new TestableArray(null, good));
         assertThrows(NullPointerException.class, () -> new TestableArray(good, null));
-        // length mismatch
+
         double[] xs = {0.0, 1.0};
         double[] ys = {0.0};
         assertThrows(IllegalArgumentException.class, () -> new TestableArray(xs, ys));
-        // empty arrays not allowed
+
         assertThrows(IllegalArgumentException.class, () -> new TestableArray(new double[]{}, new double[]{}));
-        // unsorted x values
+
         double[] badX = {0.0, 2.0, 1.0};
         double[] y = {0.0, 4.0, 1.0};
         assertThrows(IllegalArgumentException.class, () -> new TestableArray(badX, y));
@@ -88,7 +82,7 @@ public class ArrayTabulatedFunctionTest {
 
     @Test
     void testConstructorFromFunctionBasic() {
-        // source: f(x) = x^2
+
         MathFunction square = x -> x * x;
         TestableArray t = new TestableArray(square, 0.0, 2.0, 3);
 
@@ -100,20 +94,19 @@ public class ArrayTabulatedFunctionTest {
         assertEquals(0.0, t.getY(0), EPS);
         assertEquals(1.0, t.getY(1), EPS);
         assertEquals(4.0, t.getY(2), EPS);
-        // last x equals right bound exactly (constructor enforces)
+
         assertEquals(2.0, t.rightBound(), EPS);
     }
 
     @Test
     void testConstructorFromFunctionSwapBoundsAndCountOne() {
         MathFunction id = x -> x;
-        // swapped bounds
+
         TestableArray t = new TestableArray(id, 2.0, 0.0, 3);
         assertEquals(3, t.getCount());
         assertEquals(0.0, t.getX(0), EPS);
         assertEquals(2.0, t.getX(2), EPS);
 
-        // count == 1
         TestableArray single = new TestableArray(id, 5.0, 10.0, 1);
         assertEquals(1, single.getCount());
         assertEquals(5.0, single.getX(0), EPS);
@@ -132,7 +125,6 @@ public class ArrayTabulatedFunctionTest {
         assertEquals(2, t.indexOfY(10.0));
         assertEquals(-1, t.indexOfY(-1.0));
 
-        // setY changes value
         t.setY(1, 42.0);
         assertEquals(42.0, t.getY(1), EPS);
         assertEquals(1, t.indexOfY(42.0));
@@ -152,16 +144,13 @@ public class ArrayTabulatedFunctionTest {
 
     @Test
     void testInterpolationAndExtrapolationViaApply_linearFunction() {
-        // underlying exact function y = 2x
         double[] xs = {0.0, 1.0, 2.0};
         double[] ys = {0.0, 2.0, 4.0};
         TestableArray t = new TestableArray(xs, ys);
 
-        // interpolation inside interval
         assertEquals(1.0, t.apply(0.5), EPS);   // (0.5)*2 = 1.0
         assertEquals(3.0, t.apply(1.5), EPS);   // 1.5*2 = 3.0
 
-        // extrapolation left and right
         assertEquals(-2.0, t.apply(-1.0), EPS); // 2*(-1) = -2
         assertEquals(6.0, t.apply(3.0), EPS);   // 2*3 = 6
     }
@@ -172,25 +161,16 @@ public class ArrayTabulatedFunctionTest {
         double[] ys = {0.0, 1.0, 4.0, 16.0}; // some values
         TestableArray t = new TestableArray(xs, ys);
 
-        // floor index: before first => 0
         assertEquals(0, t.pubFloorIndex(-1.0));
-        // floor index: equal to first => 0 (no element < first)
         assertEquals(0, t.pubFloorIndex(0.0));
-        // floor index: between 1 and 2 => 1
         assertEquals(1, t.pubFloorIndex(1.5));
-        // floor index: greater than last => count (4)
         assertEquals(4, t.pubFloorIndex(10.0));
 
-        // direct interpolation (between x1=1 and x2=2 at x=1.5)
         double interp = t.pubInterpolate(1.5, 1);
         assertEquals(2.5, interp, 1e-9); // linear between (1,1) and (2,4): 1 + 0.5*(4-1)/(1) = 2.5
 
-        // extrapolate left using first two points (0 and 1)
         assertEquals(-0.25, t.pubExtrapolateLeft(-0.25), 1e-9);
-        // extrapolate right using last two points (2 and 4)
         assertEquals(22.0, t.pubExtrapolateRight(5.0), 1e-9); // between (2,4) and (4,16) slope=6 -> at 5: 16 + 1*6 = 22? Wait compute carefully
-        // recalc expected: slope = (16-4)/(4-2)=12/2=6 -> at x=5 => y=16 + (5-4)*6 = 22
-        // But we asserted 28 above erroneously; fix to expected 22
     }
 
     @Test
@@ -209,10 +189,8 @@ public class ArrayTabulatedFunctionTest {
         double[] ys = {0.0, 1.0, 4.0};
         TestableArray t = new TestableArray(xs, ys);
 
-        // exact node
         assertEquals(1.0, t.apply(1.0), EPS); // exact match returns getY(index)
 
-        // NaN propagation
         assertTrue(Double.isNaN(t.apply(Double.NaN)));
     }
 
@@ -240,7 +218,6 @@ public class ArrayTabulatedFunctionTest {
         double[] ys = {1.0, 2.0, 1.0, 1.0};
         TestableArray t = new TestableArray(xs, ys);
 
-        // indexOfY returns first matching index
         assertEquals(0, t.indexOfY(1.0));
         assertEquals(1, t.indexOfY(2.0));
     }
@@ -248,7 +225,7 @@ public class ArrayTabulatedFunctionTest {
     @Test
     void testConstructorFromFunction_withSameBounds() {
         MathFunction f = x -> Math.sin(x);
-        // xFrom == xTo case: all x should be equal to that bound, all y equal to f(bound)
+
         TestableArray t = new TestableArray(f, 1.2345, 1.2345, 4);
         assertEquals(4, t.getCount());
         for (int i = 0; i < t.getCount(); i++) {
@@ -286,5 +263,87 @@ public class ArrayTabulatedFunctionTest {
         int res4 = t.indexOfY(2.77);
         assertEquals(2, res4, 1e-6);
 
+    }
+
+    @Test
+    void removeHead() {
+        double[] xs = {1.0, 2.0, 3.0};
+        double[] ys = {10.0, 20.0, 30.0};
+        ArrayTabulatedFunction arr = new ArrayTabulatedFunction(xs, ys);
+
+        arr.remove(0);
+
+        assertEquals(2, arr.getCount());
+        assertEquals(2.0, arr.getX(0), EPS);   // теперь первый элемент — был второй
+        assertEquals(3.0, arr.getX(1), EPS);
+    }
+
+    @Test
+    void removeMiddle() {
+        double[] xs = {0.0, 1.0, 2.0, 3.0};
+        double[] ys = {0.0, 10.0, 20.0, 30.0};
+        ArrayTabulatedFunction arr = new ArrayTabulatedFunction(xs, ys);
+
+        arr.remove(2); // удалить x==2.0
+
+        assertEquals(3, arr.getCount());
+        assertEquals(0.0, arr.getX(0), EPS);
+        assertEquals(1.0, arr.getX(1), EPS);
+        assertEquals(3.0, arr.getX(2), EPS);
+    }
+
+    @Test
+    void removeTail() {
+        double[] xs = {1.0, 2.0, 5.0};
+        double[] ys = {10.0, 20.0, 50.0};
+        ArrayTabulatedFunction arr = new ArrayTabulatedFunction(xs, ys);
+
+        arr.remove(arr.getCount() - 1); // удалить последний
+
+        assertEquals(2, arr.getCount());
+        assertEquals(2.0, arr.rightBound(), EPS); // правый предел обновлён
+    }
+
+    @Test
+    void removeSingleElement() {
+        double[] xs = {3.14};
+        double[] ys = {42.0};
+        ArrayTabulatedFunction arr = new ArrayTabulatedFunction(xs, ys);
+
+        arr.remove(0);
+
+        assertEquals(0, arr.getCount());
+        assertThrows(IndexOutOfBoundsException.class, () -> arr.getX(0));
+        assertThrows(IndexOutOfBoundsException.class, () -> arr.getY(0));
+    }
+
+    @Test
+    void removeInvalidIndices() {
+        double[] xs = {0.0, 1.0};
+        double[] ys = {0.0, 1.0};
+        ArrayTabulatedFunction arr = new ArrayTabulatedFunction(xs, ys);
+
+        assertThrows(IndexOutOfBoundsException.class, () -> arr.remove(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> arr.remove(arr.getCount()));
+    }
+
+    @Test
+    void consecutiveRemovals() {
+        double[] xs = {0.0, 1.0, 2.0, 3.0};
+        double[] ys = {0.0, 10.0, 20.0, 30.0};
+        ArrayTabulatedFunction arr = new ArrayTabulatedFunction(xs, ys);
+
+        arr.remove(0); // удалили 0.0
+        assertEquals(3, arr.getCount());
+        assertEquals(1.0, arr.getX(0), EPS);
+
+        arr.remove(1); // теперь удаляем средний (первоначально 2.0)
+        assertEquals(2, arr.getCount());
+        assertEquals(1.0, arr.getX(0));
+        assertEquals(3.0, arr.getX(1));
+
+        arr.remove(1); // удаляем хвост
+        assertEquals(1, arr.getCount());
+        assertEquals(1.0, arr.getX(0));
     }
 }
