@@ -1,6 +1,6 @@
 package functions;
 
-public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable {
+public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
 
     private class Node {
         public Node next;
@@ -235,4 +235,59 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         return interpolate(x, left.x, right.x, left.y, right.y);
     }
 
+    @Override
+    public void remove(int index) {
+        // Защита на некорректный индекс
+        if (index < 0 || index >= getCount()) {
+            throw new IndexOutOfBoundsException("Index: " + index);
+        }
+
+        // Если единственный элемент — очистить список
+        if (getCount() == 1) {
+            head = null;
+            count = 0;
+            setCount(0);
+            return;
+        }
+
+        // выбираем более короткий путь: от головы (вперёд) или от хвоста (назад)
+        Node cur;
+        int i;
+        int n = getCount();
+
+        if (index < n / 2) {
+            // Идём от головы вперёд
+            cur = head;
+            i = 0;
+            while (i < index) {
+                cur = cur.next;
+                i++;
+            }
+        } else {
+            // Идём от хвоста назад
+            cur = head.prev; // Последний элемент
+            i = n - 1;
+            while (i > index) {
+                cur = cur.prev;
+                i--;
+            }
+        }
+
+        // cur — узел, который нужно удалить
+        cur.prev.next = cur.next;
+        cur.next.prev = cur.prev;
+
+        // Если удаляем головной элемент — обновляем head
+        if (cur == head) {
+            head = cur.next;
+        }
+
+        // Уменьшаем счётчик и синхронизируем с базой
+        count--;
+        setCount(count);
+
+        // Обнуляем ссылки удалённого узла
+        cur.next = null;
+        cur.prev = null;
+    }
 }

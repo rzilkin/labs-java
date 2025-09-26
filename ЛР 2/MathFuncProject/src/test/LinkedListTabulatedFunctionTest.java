@@ -140,7 +140,82 @@ public class LinkedListTabulatedFunctionTest {
         func.insert(1.5, 0.52);
         double res3 = func.indexOfY(0.52);
         assertEquals(0, res3, 1e-6);
+    }
 
+    @Test
+    void testRemoveFirstElement() {
+        // Создаём список из трёх элементов
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {10.0, 20.0, 30.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        // Удаляем первый элемент
+        func.remove(0);
+
+        // Теперь первый элемент должен быть (2.0, 20.0)
+        assertEquals(2.0, func.getX(0));
+        assertEquals(20.0, func.getY(0));
+        assertEquals(2, func.getCount());
+    }
+
+    @Test
+    void testRemoveLastElement() {
+        // Создаём список из трёх элементов
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {10.0, 20.0, 30.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        // Удаляем последний элемент
+        func.remove(2);
+
+        // Последний элемент теперь (2.0, 20.0)
+        assertEquals(2.0, func.getX(1));
+        assertEquals(20.0, func.getY(1));
+        assertEquals(2, func.getCount());
+    }
+
+    @Test
+    void testRemoveMiddleElement() {
+        // Создаём список из трёх элементов
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {10.0, 20.0, 30.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        // Удаляем средний элемент (индекс 1)
+        func.remove(1);
+
+        // Теперь элементы: (1.0, 10.0) и (3.0, 30.0)
+        assertEquals(2, func.getCount());
+        assertEquals(1.0, func.getX(0));
+        assertEquals(10.0, func.getY(0));
+        assertEquals(3.0, func.getX(1));
+        assertEquals(30.0, func.getY(1));
+    }
+
+    @Test
+    void testRemoveSingleElementList() {
+        // Создаём список из одного элемента
+        double[] x = {1.0};
+        double[] y = {10.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        // Удаляем единственный элемент — список должен стать пустым
+        func.remove(0);
+
+        // Ожидаем, что количество стало нулевым
+        assertEquals(0, func.getCount());
+    }
+
+    @Test
+    void testRemoveInvalidIndex() {
+        // Создаём список из двух элементов
+        double[] x = {1.0, 2.0};
+        double[] y = {10.0, 20.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        // Неверный индекс (отрицательный и слишком большой)
+        assertThrows(IndexOutOfBoundsException.class, () -> func.remove(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> func.remove(5));
     }
 
 }
