@@ -2,8 +2,7 @@ package functions;
 import java.util.Arrays;
 import java.util.Objects;
 
-/* Реализация TabulatedFunction на основе двух массивов xValues и yValues.
-* */
+// Реализация TabulatedFunction на основе двух массивов xValues и yValues.
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable{
     private double[] xValues;
     private double[] yValues;
@@ -58,7 +57,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
                 this.xValues[i] = xi;
                 this.yValues[i] = source.apply(xi);
             }
-            // В силу арифметики с плавающей запятой гарантируем,
+            // В силу арифметики с плавающей точкой гарантируем,
             // что последний элемент == right
             this.xValues[count - 1] = right;
         }
