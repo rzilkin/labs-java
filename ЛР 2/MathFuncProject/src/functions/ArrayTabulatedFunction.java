@@ -185,23 +185,23 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
 
     @Override
     public void insert(double x, double y) {
-        int indexInArray = indexOfX(x);
-        if (indexInArray != -1) {
+        int indexInArray = indexOfX(x);     //узнаём индекс
+        if (indexInArray != -1) {       //если индекс существует, то устанавливаем y
             yValues[indexInArray] = y;
             return;
         }
 
-        count = xValues.length;
+        count = xValues.length;     //устанавливаем количество элементов в массиве
         int indexForInsert = 0;
         if (count > 0) {
-            if (x < xValues[0]) {
+            if (x < xValues[0]) {       //вставка на самое первое место
                 indexForInsert = 0;
             }
-            else if (x > xValues[count - 1]) {
+            else if (x > xValues[count - 1]) {      //вставка на последнее место
                 indexForInsert = count;
             }
             else {
-                for (int i = 0; i < count - 1; i++) {
+                for (int i = 0; i < count - 1; i++) {       //ищем индекс для вставки
                     if (x > xValues[i] && x < xValues[i + 1]) {
                         indexForInsert = i + 1;
                         break;
@@ -210,18 +210,18 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
             }
         }
 
-        double[] newXValues = new double[count + 1];
+        double[] newXValues = new double[count + 1];        //новые массивы для копирования
         double[] newYValues = new double[count + 1];
-
+        //копируем элементы из старых массивов с начала, в новые с начала
         System.arraycopy(xValues, 0, newXValues, 0, indexForInsert);
         System.arraycopy(yValues, 0, newYValues, 0, indexForInsert);
-
+        //добавляем значения
         newXValues[indexForInsert] = x;
         newYValues[indexForInsert] = y;
-
+        //продолжаем копирование
         System.arraycopy(xValues, indexForInsert, newXValues, indexForInsert + 1, count - indexForInsert);
         System.arraycopy(yValues, indexForInsert, newYValues, indexForInsert + 1, count - indexForInsert);
-
+        //обновляем ссылки на массивы
         xValues = newXValues;
         yValues = newYValues;
 

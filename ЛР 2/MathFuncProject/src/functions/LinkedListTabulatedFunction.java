@@ -1,30 +1,25 @@
 package functions;
 
+//класс хранения данных табличной функции на основе циклического двусвязного списка, расширяющий AbstractTabulatedFunction
+//и реализующий Insertable, Removable
 public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
+    protected int count;    //счётчик списка
+    Node head;      //голова списка
 
-    private class Node {
-        public Node next;
-        public Node prev;
-        public double x;
-        public double y;
-    }
-
-    protected int count;
-    Node head;
-
-    private void addNode(double x, double y) {
-        Node newNode = new Node();
-
+    private void addNode(double x, double y) {      //добавление узла
+        Node newNode = new Node();      //создание нового узла
+        //добавление значений точки
         newNode.x = x;
         newNode.y = y;
 
-        if(head == null) {
+        if(head == null) {      //если нет элементов, то создаём голову списка, которая ссылается на саму себя
             head = newNode;
+            //создание ссылок
             head.next = head;
             head.prev = head;
         }
 
-        else {
+        else {      //если список не пуст, то переопределяем связи между узлами
             Node last = head.prev;
             last.next = newNode;
             head.prev = newNode;
@@ -32,96 +27,97 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             newNode.prev = last;
         }
 
-        count += 1;
+        count += 1;     //расширяем список
     }
 
+    //конструктор, если данные в массивах
     public LinkedListTabulatedFunction(double[] xValues, double[] yValues) {
         for(int i = 0; i < xValues.length; ++i) {
             addNode(xValues[i], yValues[i]);
         }
     }
-
+    //конструктор при помощи другой функции
     public LinkedListTabulatedFunction(MathFunction source, double xFrom, double xTo, int count) {
-        if(xFrom > xTo) {
+        if(xFrom > xTo) {       //если xFrom > xTo, то свапаем их
             double temp = xFrom;
             xFrom = xTo;
             xTo = temp;
         }
 
-        if(xFrom == xTo) {
+        if(xFrom == xTo) {      //если границы совпадают, то создаём каунтовое количество точек с функцией source
             for (int i = 0; i < count; ++i) {
                 addNode(xFrom, source.apply(xFrom));
             }
         }
-        else {
-            double step = (xTo - xFrom) / (count - 1);
+        else {                  //если не совпадают, то добавляем точки при помощи равномерной дискретизации
+            double step = (xTo - xFrom) / (count - 1); //задаём шаг, который будет ровно делить отрезок
             for(int i = 0; i < count; ++i) {
-                double x = xFrom + i * step;
-                addNode(x, source.apply(x));
+                double x = xFrom + i * step;        //создаём каждый x подобным образом: x1 = a + b, x2 = a + 2b, и так далее
+                addNode(x, source.apply(x));        //добавляем точку
             }
         }
     }
 
     @Override
-    public void insert(double x, double y) {
-        if (head == null) {
+    public void insert(double x, double y) {        //добавление точки
+        if (head == null) {         //если список пуст, просто добавляем узел
             addNode(x, y);
             return;
         }
 
-        Node cur = head;
+        Node cur = head;    //создаём текущий узел
         int iter = 0;
 
         do {
-            if (cur.x == x) {
+            if (cur.x == x) {       //если совпал x, то просто меняем y на новый
                 cur.y = y;
                 return;
             }
 
-            if (x < cur.x) {
-                insertBefore(cur, x, y);
+            if (x < cur.x) {        //если меньше некоторого x в списке, то вставляем слева от него
+                insertBefore(cur, x, y);        //вызов вспомогательного метода
                 if (cur == head) {
-                    head = head.prev;
+                    head = head.prev;       //обновляем голову, если вставляем перед ней
                 }
                 return;
             }
 
-            if (cur.next == head || x < cur.next.x) {
-                insertAfter(cur, x, y);
+            if (cur.next == head || x < cur.next.x) {       //если меньше следующего, но больше текущего, то вставляем после
+                insertAfter(cur, x, y);     //вызов доп. метода
                 return;
             }
 
-            cur = cur.next;
+            cur = cur.next;     //двигаемя дальше по списку
             iter++;
-        } while (cur != head && iter < count);
+        } while (cur != head && iter < count);  //идём пока текущий указатель не ссылается на голову и количество итераций не перевалит за число элементов в списке
 
-        insertBefore(head, x, y);
+        insertBefore(head, x, y);       //вставка в конец
     }
 
-    private void insertAfter(Node node, double x, double y) {
-        Node newNode = new Node();
-        newNode.x = x;
+    private void insertAfter(Node node, double x, double y) {       //вставка после
+        Node newNode = new Node();      //новый узел
+        newNode.x = x;          //добавление значений
         newNode.y = y;
 
-        newNode.next = node.next;
+        newNode.next = node.next;       //обновление связей узлов
         newNode.prev = node;
         node.next.prev = newNode;
         node.next = newNode;
 
-        count++;
+        count++;        //увеличиваем длину списка
     }
 
-    private void insertBefore(Node node, double x, double y) {
-        Node newNode = new Node();
-        newNode.x = x;
+    private void insertBefore(Node node, double x, double y) {      //вставка до
+        Node newNode = new Node();      //новый узел
+        newNode.x = x;          //добавление значений
         newNode.y = y;
 
-        newNode.prev = node.prev;
+        newNode.prev = node.prev;       //обновление связей узлов
         newNode.next = node;
         node.prev.next = newNode;
         node.prev = newNode;
 
-        count++;
+        count++;        //увеличиваем длину списка
     }
 
     @Override
@@ -139,9 +135,10 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         return head.prev.x;
     }
 
-    private Node getNode(int index) {
-        if (index < count / 2) {
+    private Node getNode(int index) {       //вспомогательный метод получения узла по индексу
+        if (index < count / 2) {        //ускоряем работу получения узла, узнав в какой части списка узел
             Node cur = head;
+            //по списку проходим до нашего индекса
             for (int i = 0; i < index; i++) {
                 cur = cur.next;
             }
@@ -149,6 +146,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         }
         else {
             Node cur = head.prev;
+            //по списку проходим до нашего индекса, но если во второй части списка
             for (int i = count - 1; i > index; ++i) {
                 cur = cur.prev;
             }
@@ -172,7 +170,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
 
     @Override
-    public int indexOfX(double x) {
+    public int indexOfX(double x) {     //индекс по значению x
         Node cur = head;
         for (int i = 0; i < count; i++) {
             if (cur.x == x) {
@@ -184,7 +182,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
 
     @Override
-    public int indexOfY(double y) {
+    public int indexOfY(double y) {     //индекс по значению y
         Node cur = head;
         for (int i = 0; i < count; i++) {
             if (cur.y == y) {
@@ -196,7 +194,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
 
     @Override
-    public int floorIndexOfX(double x) {
+    public int floorIndexOfX(double x) {        //находит x, удовлетворяющий: x[i] <= x < x[i+1]
         if (x < head.x) return 0;
 
         Node cur = head;
@@ -210,27 +208,27 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
 
     @Override
-    public double extrapolateLeft(double x) {
-        if (count == 1) return head.y;
+    public double extrapolateLeft(double x) {       //левая экстраполяция
+        if (count == 1) return head.y;          //если один элемент в списке
         Node first = head;
         Node second = head.next;
         return interpolate(x, first.x, second.x, first.y, second.y);
     }
 
     @Override
-    public double extrapolateRight(double x) {
-        if (count == 1) return head.y;
+    public double extrapolateRight(double x) {  //правая экстраполяция
+        if (count == 1) return head.y;          //если один элемент в списке
         Node last = head.prev;
         Node secondLast = last.prev;
         return interpolate(x, secondLast.x, last.x, secondLast.y, last.y);
     }
 
     @Override
-    public double interpolate(double x, int floorIndex) {
-        if (count == 1) return head.y;
-        if (floorIndex == count) return head.prev.y;
+    public double interpolate(double x, int floorIndex) {       //интерполяция
+        if (count == 1) return head.y;          //если один элемент в списке
+        if (floorIndex == count) return head.prev.y;        //случай правой экстраполяции, просто возвращаем послединй y
 
-        Node left = getNode(floorIndex);
+        Node left = getNode(floorIndex);        //если мужду двумя x
         Node right = left.next;
         return interpolate(x, left.x, right.x, left.y, right.y);
     }
