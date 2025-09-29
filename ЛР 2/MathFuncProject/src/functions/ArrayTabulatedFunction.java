@@ -6,7 +6,6 @@ import java.util.Objects;
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable{
     private double[] xValues;
     private double[] yValues;
-    private int count;
 
     public ArrayTabulatedFunction(double[] xValues, double [] yValues){
         Objects.requireNonNull(xValues, "xValues не может быть пустым");
@@ -191,9 +190,14 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
             return;
         }
 
-        count = xValues.length;     //устанавливаем количество элементов в массиве
+        int count = getCount();     //устанавливаем количество элементов в массиве
         int indexForInsert = 0;
-        if (count > 0) {
+        if(count == 0){
+            xValues = new double[] { x };
+            yValues = new double[] { y };
+            setCount(1);
+            return;
+        }else {
             if (x < xValues[0]) {       //вставка на самое первое место
                 indexForInsert = 0;
             }
@@ -224,7 +228,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         //обновляем ссылки на массивы
         xValues = newXValues;
         yValues = newYValues;
-
+        setCount(count + 1);
     }
 
     @Override
