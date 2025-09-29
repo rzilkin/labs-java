@@ -3,7 +3,6 @@ package functions;
 //класс хранения данных табличной функции на основе циклического двусвязного списка, расширяющий AbstractTabulatedFunction
 //и реализующий Insertable, Removable
 public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
-    protected int count;    //счётчик списка
     Node head;      //голова списка
 
     private void addNode(double x, double y) {      //добавление узла
@@ -27,7 +26,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             newNode.prev = last;
         }
 
-        count += 1;     //расширяем список
+        setCount(getCount() + 1);     //расширяем список
     }
 
     //конструктор, если данные в массивах
@@ -89,7 +88,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
             cur = cur.next;     //двигаемя дальше по списку
             iter++;
-        } while (cur != head && iter < count);  //идём пока текущий указатель не ссылается на голову и количество итераций не перевалит за число элементов в списке
+        } while (cur != head && iter < getCount());  //идём пока текущий указатель не ссылается на голову и количество итераций не перевалит за число элементов в списке
 
         insertBefore(head, x, y);       //вставка в конец
     }
@@ -104,7 +103,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         node.next.prev = newNode;
         node.next = newNode;
 
-        count++;        //увеличиваем длину списка
+        setCount(getCount() + 1);        //увеличиваем длину списка
     }
 
     private void insertBefore(Node node, double x, double y) {      //вставка до
@@ -117,12 +116,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         node.prev.next = newNode;
         node.prev = newNode;
 
-        count++;        //увеличиваем длину списка
-    }
-
-    @Override
-    public int getCount() {
-        return count;
+        setCount(getCount() + 1);        //увеличиваем длину списка
     }
 
     @Override
@@ -136,7 +130,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
 
     private Node getNode(int index) {       //вспомогательный метод получения узла по индексу
-        if (index < count / 2) {        //ускоряем работу получения узла, узнав в какой части списка узел
+        if (index < getCount() / 2) {        //ускоряем работу получения узла, узнав в какой части списка узел
             Node cur = head;
             //по списку проходим до нашего индекса
             for (int i = 0; i < index; i++) {
@@ -147,7 +141,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         else {
             Node cur = head.prev;
             //по списку проходим до нашего индекса, но если во второй части списка
-            for (int i = count - 1; i > index; ++i) {
+            for (int i = getCount() - 1; i > index; ++i) {
                 cur = cur.prev;
             }
             return cur;
@@ -172,7 +166,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     @Override
     public int indexOfX(double x) {     //индекс по значению x
         Node cur = head;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < getCount(); i++) {
             if (cur.x == x) {
                 return i;
             }
@@ -184,7 +178,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     @Override
     public int indexOfY(double y) {     //индекс по значению y
         Node cur = head;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < getCount(); i++) {
             if (cur.y == y) {
                 return i;
             }
@@ -198,18 +192,18 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         if (x < head.x) return 0;
 
         Node cur = head;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < getCount(); i++) {
             if (cur.x > x) {
                 return i == 0 ? 0 : i - 1;
             }
             cur = cur.next;
         }
-        return count;
+        return getCount();
     }
 
     @Override
     public double extrapolateLeft(double x) {       //левая экстраполяция
-        if (count == 1) return head.y;          //если один элемент в списке
+        if (getCount() == 1) return head.y;          //если один элемент в списке
         Node first = head;
         Node second = head.next;
         return interpolate(x, first.x, second.x, first.y, second.y);
@@ -217,7 +211,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     @Override
     public double extrapolateRight(double x) {  //правая экстраполяция
-        if (count == 1) return head.y;          //если один элемент в списке
+        if (getCount() == 1) return head.y;          //если один элемент в списке
         Node last = head.prev;
         Node secondLast = last.prev;
         return interpolate(x, secondLast.x, last.x, secondLast.y, last.y);
@@ -225,8 +219,8 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     @Override
     public double interpolate(double x, int floorIndex) {       //интерполяция
-        if (count == 1) return head.y;          //если один элемент в списке
-        if (floorIndex == count) return head.prev.y;        //случай правой экстраполяции, просто возвращаем послединй y
+        if (getCount() == 1) return head.y;          //если один элемент в списке
+        if (floorIndex == getCount()) return head.prev.y;        //случай правой экстраполяции, просто возвращаем послединй y
 
         Node left = getNode(floorIndex);        //если мужду двумя x
         Node right = left.next;
@@ -243,7 +237,6 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         // Если единственный элемент — очистить список
         if (getCount() == 1) {
             head = null;
-            count = 0;
             setCount(0);
             return;
         }
@@ -281,8 +274,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         }
 
         // Уменьшаем счётчик и синхронизируем с базой
-        count--;
-        setCount(count);
+        setCount(getCount() - 1);
 
         // Обнуляем ссылки удалённого узла
         cur.next = null;
