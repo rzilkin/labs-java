@@ -3,6 +3,13 @@ package functions;
 //класс хранения данных табличной функции на основе циклического двусвязного списка, расширяющий AbstractTabulatedFunction
 //и реализующий Insertable, Removable
 public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
+    private static class Node {
+        private Node next;
+        private Node prev;
+        private double x;
+        private double y;
+    }
+
     Node head;      //голова списка
 
     private void addNode(double x, double y) {      //добавление узла
