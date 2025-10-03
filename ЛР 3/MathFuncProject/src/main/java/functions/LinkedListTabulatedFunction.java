@@ -1,6 +1,7 @@
 package functions;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 //класс хранения данных табличной функции на основе циклического двусвязного списка, расширяющий AbstractTabulatedFunction
 //и реализующий Insertable, Removable
@@ -311,6 +312,32 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     @Override
     public Iterator<Point> iterator() {
-        throw new UnsupportedOperationException("Итерация не возможна");
+        return new Iterator<Point>() {
+            private Node cur = head;
+            private int returned = 0;
+
+            @Override
+            public boolean hasNext() {
+                return returned < getCount();
+            }
+
+            @Override
+            public Point next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
+                Point point = new Point(cur.x, cur.y);
+                cur = cur.next;
+                returned++;
+                return point;
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 }
+

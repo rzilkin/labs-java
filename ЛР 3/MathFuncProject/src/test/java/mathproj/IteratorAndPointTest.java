@@ -26,9 +26,10 @@ public class IteratorAndPointTest {
         double[] xValues = {1.0, 2.0, 3.0};
         double[] yValues = {10.0, 20.0, 30.0};
         LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(xValues, yValues);
+        Iterator<Point> iterator = func.iterator();
 
         assertThrows(UnsupportedOperationException.class, () -> {
-            Iterator<Point> iterator = func.iterator();
+            iterator.remove();
         });
     }
 
