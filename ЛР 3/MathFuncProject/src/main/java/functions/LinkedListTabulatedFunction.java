@@ -1,5 +1,7 @@
 package functions;
 
+import java.util.Iterator;
+
 //класс хранения данных табличной функции на основе циклического двусвязного списка, расширяющий AbstractTabulatedFunction
 //и реализующий Insertable, Removable
 public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
@@ -305,5 +307,10 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         // Обнуляем ссылки удалённого узла
         cur.next = null;
         cur.prev = null;
+    }
+
+    @Override
+    public Iterator<Point> iterator() {
+        throw new UnsupportedOperationException("Итерация не возможна");
     }
 }

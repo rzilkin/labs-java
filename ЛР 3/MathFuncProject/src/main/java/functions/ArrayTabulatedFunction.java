@@ -1,6 +1,8 @@
 package functions;
+
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Iterator;
 
 // Реализация TabulatedFunction на основе двух массивов xValues и yValues.
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable{
@@ -253,5 +255,10 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
 
         // уменьшаем логический размер
         setCount(n - 1);
+    }
+
+    @Override
+    public Iterator<Point> iterator() {
+        throw new UnsupportedOperationException("Итерация не возможна");
     }
 }

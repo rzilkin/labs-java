@@ -1,7 +1,7 @@
 package functions;
 
 //интерфейс табличной функции, расширяющий MathFunction
-public interface TabulatedFunction extends MathFunction {
+public interface TabulatedFunction extends MathFunction, Iterable<Point> {
 
     int getCount(); //получение count
     double getX(int index); //получение индекса x
