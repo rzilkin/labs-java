@@ -14,8 +14,8 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         if(xValues.length != yValues.length)
             throw new IllegalArgumentException("длины xValues и yValues должны совпадать");
 
-        if(xValues.length == 0)
-            throw new IllegalArgumentException("Массивы должны содержать хотя бы один элемент");
+        if(xValues.length < 2)
+            throw new IllegalArgumentException("Меньше минимальной длины");
 
         this.xValues = Arrays.copyOf(xValues, xValues.length);
         this.yValues = Arrays.copyOf(yValues, yValues.length);
@@ -29,8 +29,8 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
 
     public ArrayTabulatedFunction(MathFunction source, double xFrom, double xTo, int count){
         Objects.requireNonNull(source, "source не может быть нулевым");
-        if (count <= 0)
-            throw new IllegalArgumentException("count должен быть >= 1");
+        if (count < 2)
+            throw new IllegalArgumentException("count должен быть >= 2");
 
         // если границы перепутаны - меняем местами
         double left = xFrom;
@@ -44,39 +44,38 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         this.xValues = new double[count];
         this.yValues = new double[count];
 
-        if(count == 1){
-            // Массив длины 1 - единственная точка
-            this.xValues[0] = left;
-            this.yValues[0] = source.apply(left);
-        } else{
-            // Шаг: (right - left) / (count - 1)
-            double step = (right - left) / (count - 1);
-            for (int i = 0; i < count; i++) {
-                double xi = left + i * step;
-                this.xValues[i] = xi;
-                this.yValues[i] = source.apply(xi);
-            }
-            // В силу арифметики с плавающей точкой гарантируем,
-            // что последний элемент == right
-            this.xValues[count - 1] = right;
-        }
+        // Шаг: (right - left) / (count - 1)
+        double step = (right - left) / (count - 1);
+        for (int i = 0; i < count; i++) {
+            double xi = left + i * step;
+            this.xValues[i] = xi;
+            this.yValues[i] = source.apply(xi);
+        }// В силу арифметики с плавающей точкой гарантируем,
+        // что последний элемент == right
+        this.xValues[count - 1] = right;
         setCount(count);
     }
 
     @Override
     public double getX(int index) {
+        if (index < 0 || index >= getCount())
+            throw new IllegalArgumentException("Неверный индекс");
         checkIndex(index);
         return xValues[index];
     }
 
     @Override
     public double getY(int index) {
+        if (index < 0 || index >= getCount())
+            throw new IllegalArgumentException("Неверный индекс");
         checkIndex(index);
         return yValues[index];
     }
 
     @Override
     public void setY(int index, double value) {
+        if (index < 0 || index >= getCount())
+            throw new IllegalArgumentException("Неверный индекс для вставки");
         checkIndex(index);
         yValues[index] = value;
     }
@@ -120,7 +119,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         int n = getCount();
         // Если x меньше или равно первому узлу (и не равен точно — equality проверяется отдельно)
         if (x <= xValues[0]) {
-            return 0;
+            throw new IllegalArgumentException("X меньше левой границы");
         }
         // Если x больше или равно последнему узлу
         if (x >= xValues[n - 1]) {
@@ -143,7 +142,6 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     @Override
     protected double interpolate(double x, int floorIndex) {
         int n = getCount();
-        if (n == 1) return getY(0);
 
         // Защита индекса
         if (floorIndex < 0) floorIndex = 0;
@@ -161,7 +159,6 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     @Override
     protected double extrapolateLeft(double x) {
         int n = getCount();
-        if (n == 1) return getY(0);
         return super.interpolate(x, xValues[0], xValues[1], yValues[0], yValues[1]);
     }
 
@@ -169,7 +166,6 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     @Override
     protected double extrapolateRight(double x) {
         int n = getCount();
-        if (n == 1) return getY(0);
         return super.interpolate(x,
                 xValues[n - 2], xValues[n - 1],
                 yValues[n - 2], yValues[n - 1]);

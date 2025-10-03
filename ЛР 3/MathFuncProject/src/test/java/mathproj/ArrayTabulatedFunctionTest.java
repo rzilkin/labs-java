@@ -107,10 +107,7 @@ public class ArrayTabulatedFunctionTest {
         assertEquals(0.0, t.getX(0), EPS);
         assertEquals(2.0, t.getX(2), EPS);
 
-        TestableArray single = new TestableArray(id, 5.0, 10.0, 1);
-        assertEquals(1, single.getCount());
-        assertEquals(5.0, single.getX(0), EPS);
-        assertEquals(5.0, single.getY(0), EPS);
+        assertThrows(IllegalArgumentException.class, () -> new TestableArray(id, 5.0, 10.0, 1));
     }
 
     @Test
@@ -136,10 +133,10 @@ public class ArrayTabulatedFunctionTest {
         double[] ys = {0.0, 1.0};
         TestableArray t = new TestableArray(xs, ys);
 
-        assertThrows(IndexOutOfBoundsException.class, () -> t.getX(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> t.getX(2));
-        assertThrows(IndexOutOfBoundsException.class, () -> t.getY(2));
-        assertThrows(IndexOutOfBoundsException.class, () -> t.setY(2, 3.0));
+        assertThrows(IllegalArgumentException.class, () -> t.getX(-1));
+        assertThrows(IllegalArgumentException.class, () -> t.getX(2));
+        assertThrows(IllegalArgumentException.class, () -> t.getY(2));
+        assertThrows(IllegalArgumentException.class, () -> t.setY(2, 3.0));
     }
 
     @Test
@@ -161,8 +158,8 @@ public class ArrayTabulatedFunctionTest {
         double[] ys = {0.0, 1.0, 4.0, 16.0}; // some values
         TestableArray t = new TestableArray(xs, ys);
 
-        assertEquals(0, t.pubFloorIndex(-1.0));
-        assertEquals(0, t.pubFloorIndex(0.0));
+        assertThrows(IllegalArgumentException.class, () -> t.pubFloorIndex(-1.0));
+        assertThrows(IllegalArgumentException.class, () -> t.pubFloorIndex(0.0));
         assertEquals(1, t.pubFloorIndex(1.5));
         assertEquals(4, t.pubFloorIndex(10.0));
 
@@ -308,13 +305,7 @@ public class ArrayTabulatedFunctionTest {
     void removeSingleElement() {
         double[] xs = {3.14};
         double[] ys = {42.0};
-        ArrayTabulatedFunction arr = new ArrayTabulatedFunction(xs, ys);
-
-        arr.remove(0);
-
-        assertEquals(0, arr.getCount());
-        assertThrows(IndexOutOfBoundsException.class, () -> arr.getX(0));
-        assertThrows(IndexOutOfBoundsException.class, () -> arr.getY(0));
+        assertThrows(IllegalArgumentException.class, () -> new ArrayTabulatedFunction(xs, ys));
     }
 
     @Test

@@ -38,12 +38,19 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     //конструктор, если данные в массивах
     public LinkedListTabulatedFunction(double[] xValues, double[] yValues) {
+        if (xValues.length < 2 || yValues.length < 2) {
+            throw new IllegalArgumentException("Длина меньше минимальной");
+        }
         for(int i = 0; i < xValues.length; ++i) {
             addNode(xValues[i], yValues[i]);
         }
     }
     //конструктор при помощи другой функции
     public LinkedListTabulatedFunction(MathFunction source, double xFrom, double xTo, int count) {
+        if(count < 2) {
+            throw new IllegalArgumentException("Длина меньше минимальной");
+        }
+
         if(xFrom > xTo) {       //если xFrom > xTo, то свапаем их
             double temp = xFrom;
             xFrom = xTo;
@@ -137,6 +144,9 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
 
     private Node getNode(int index) {       //вспомогательный метод получения узла по индексу
+        if (index < 0 || index >= getCount()) {
+            throw new IllegalArgumentException("Индекс неверный");
+        }
         if (index < getCount() / 2) {        //ускоряем работу получения узла, узнав в какой части списка узел
             Node cur = head;
             //по списку проходим до нашего индекса
@@ -156,17 +166,27 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
 
     @Override
-    public double getX(int index) {
+    public double getX(int index)
+    {
+        if (index < 0 || index >= getCount()) {
+            throw new IllegalArgumentException("Индекс неверный");
+        }
         return getNode(index).x;
     }
 
     @Override
     public double getY(int index) {
+        if (index < 0 || index >= getCount()) {
+            throw new IllegalArgumentException("Индекс неверный");
+        }
         return getNode(index).y;
     }
 
     @Override
     public void setY(int index, double value) {
+        if (index < 0 || index >= getCount()) {
+            throw new IllegalArgumentException("Индекс неверный");
+        }
         getNode(index).y = value;
     }
 
@@ -196,7 +216,9 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     @Override
     public int floorIndexOfX(double x) {        //находит x, удовлетворяющий: x[i] <= x < x[i+1]
-        if (x < head.x) return 0;
+        if (x < head.x) {
+            throw new IllegalArgumentException("X меньше левой границы");
+        }
 
         Node cur = head;
         for (int i = 0; i < getCount(); i++) {
@@ -210,7 +232,6 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     @Override
     public double extrapolateLeft(double x) {       //левая экстраполяция
-        if (getCount() == 1) return head.y;          //если один элемент в списке
         Node first = head;
         Node second = head.next;
         return interpolate(x, first.x, second.x, first.y, second.y);
@@ -218,7 +239,6 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     @Override
     public double extrapolateRight(double x) {  //правая экстраполяция
-        if (getCount() == 1) return head.y;          //если один элемент в списке
         Node last = head.prev;
         Node secondLast = last.prev;
         return interpolate(x, secondLast.x, last.x, secondLast.y, last.y);
@@ -226,7 +246,6 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     @Override
     public double interpolate(double x, int floorIndex) {       //интерполяция
-        if (getCount() == 1) return head.y;          //если один элемент в списке
         if (floorIndex == getCount()) return head.prev.y;        //случай правой экстраполяции, просто возвращаем послединй y
 
         Node left = getNode(floorIndex);        //если мужду двумя x

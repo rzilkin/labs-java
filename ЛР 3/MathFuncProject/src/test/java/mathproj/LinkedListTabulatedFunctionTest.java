@@ -26,6 +26,98 @@ public class LinkedListTabulatedFunctionTest {
     }
 
     @Test
+    void testConstructorArraysInvalidLength() {
+        // Тест на массивы длиной менее 2
+        assertThrows(IllegalArgumentException.class, () -> {
+            double[] x = {1.0};
+            double[] y = {2.0};
+            new LinkedListTabulatedFunction(x, y);
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            double[] x = {1.0};
+            double[] y = {2.0, 3.0}; // разная длина
+            new LinkedListTabulatedFunction(x, y);
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            double[] x = {1.0, 2.0};
+            double[] y = {2.0}; // разная длина
+            new LinkedListTabulatedFunction(x, y);
+        });
+
+        // Тест на пустые массивы
+        assertThrows(IllegalArgumentException.class, () -> {
+            double[] x = {};
+            double[] y = {};
+            new LinkedListTabulatedFunction(x, y);
+        });
+    }
+
+    @Test
+    void testConstructorFromFunctionInvalidCount() {
+        MathFunction source = x -> x * x;
+
+        // Тест на count < 2
+        assertThrows(IllegalArgumentException.class, () -> {
+            new LinkedListTabulatedFunction(source, 0.0, 1.0, 1);
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            new LinkedListTabulatedFunction(source, 0.0, 1.0, 0);
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            new LinkedListTabulatedFunction(source, 0.0, 1.0, -5);
+        });
+    }
+
+    @Test
+    void testGetXInvalidIndex() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {10.0, 20.0, 30.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> func.getX(-1));
+        assertThrows(IllegalArgumentException.class, () -> func.getX(3));
+        assertThrows(IllegalArgumentException.class, () -> func.getX(100));
+    }
+
+    @Test
+    void testGetYInvalidIndex() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {10.0, 20.0, 30.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> func.getY(-1));
+        assertThrows(IllegalArgumentException.class, () -> func.getY(3));
+        assertThrows(IllegalArgumentException.class, () -> func.getY(50));
+    }
+
+    @Test
+    void testSetYInvalidIndex() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {10.0, 20.0, 30.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> func.setY(-1, 15.0));
+        assertThrows(IllegalArgumentException.class, () -> func.setY(3, 15.0));
+        assertThrows(IllegalArgumentException.class, () -> func.setY(10, 15.0));
+    }
+
+    @Test
+    void testFloorIndexOfXInvalidX() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {10.0, 20.0, 30.0};
+        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
+
+        // Тест на x меньше левой границы
+        assertThrows(IllegalArgumentException.class, () -> func.floorIndexOfX(0.5));
+        assertThrows(IllegalArgumentException.class, () -> func.floorIndexOfX(-1.0));
+        assertThrows(IllegalArgumentException.class, () -> func.floorIndexOfX(Double.NEGATIVE_INFINITY));
+    }
+
+    @Test
     void testConstructorWithArrays() {
         LinkedListTabulatedFunction func = createFunctionWithArrays();
         assertEquals(4, func.getCount());
@@ -199,13 +291,9 @@ public class LinkedListTabulatedFunctionTest {
         // Создаём список из одного элемента
         double[] x = {1.0};
         double[] y = {10.0};
-        LinkedListTabulatedFunction func = new LinkedListTabulatedFunction(x, y);
-
-        // Удаляем единственный элемент — список должен стать пустым
-        func.remove(0);
-
-        // Ожидаем, что количество стало нулевым
-        assertEquals(0, func.getCount());
+        assertThrows(IllegalArgumentException.class, () -> {
+            new LinkedListTabulatedFunction(x, y);
+        });
     }
 
     @Test
