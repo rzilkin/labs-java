@@ -1,4 +1,4 @@
-package mathproj;
+package functions;
 
 import functions.IdentifyFunction;
 import org.junit.jupiter.api.Test;

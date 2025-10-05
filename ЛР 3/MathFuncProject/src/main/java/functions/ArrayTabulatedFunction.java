@@ -3,6 +3,8 @@ package functions;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Iterator;
+import exceptions.DifferentLengthOfArraysException;
+import exceptions.ArrayIsNotSortedException;
 
 // Реализация TabulatedFunction на основе двух массивов xValues и yValues.
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable{
@@ -10,21 +12,15 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     private double[] yValues;
 
     public ArrayTabulatedFunction(double[] xValues, double [] yValues){
-        Objects.requireNonNull(xValues, "xValues не может быть пустым");
-        Objects.requireNonNull(yValues, "yValues не может быть пустым");
-
-        if(xValues.length != yValues.length)
-            throw new IllegalArgumentException("длины xValues и yValues должны совпадать");
+        AbstractTabulatedFunction.checkLengthIsTheSame(xValues, yValues);
 
         if(xValues.length < 2)
             throw new IllegalArgumentException("Меньше минимальной длины");
 
+        AbstractTabulatedFunction.checkSorted(xValues);
+
         this.xValues = Arrays.copyOf(xValues, xValues.length);
         this.yValues = Arrays.copyOf(yValues, yValues.length);
-        for (int i = 1; i < this.xValues.length; i++){
-            if(this.xValues[i] < this.xValues[i-1])
-                throw new IllegalArgumentException("xValues должен строго возрастать");
-        }
 
         setCount(this.xValues.length);
     }
@@ -146,13 +142,18 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         int n = getCount();
 
         // Защита индекса
-        if (floorIndex < 0) floorIndex = 0;
-        if (floorIndex >= n - 1) floorIndex = n - 2;
+        if (floorIndex < 0 || floorIndex >= n - 1)
+            throw new exceptions.InterpolationException("Некорректный floorIndex: " + floorIndex);
 
         double leftX = xValues[floorIndex];
         double rightX = xValues[floorIndex + 1];
         double leftY = yValues[floorIndex];
         double rightY = yValues[floorIndex + 1];
+
+        if (x < leftX || x > rightX) {
+            throw new exceptions.InterpolationException("x=" + x + " вне интервала [" + leftX + ", "
+                    + rightX + "] для интерполяции");
+        }
 
         return super.interpolate(x, leftX, rightX, leftY, rightY);
     }

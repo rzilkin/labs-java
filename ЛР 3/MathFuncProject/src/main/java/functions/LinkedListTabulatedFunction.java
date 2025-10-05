@@ -41,9 +41,14 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     //конструктор, если данные в массивах
     public LinkedListTabulatedFunction(double[] xValues, double[] yValues) {
+        AbstractTabulatedFunction.checkLengthIsTheSame(xValues, yValues);
+
         if (xValues.length < 2 || yValues.length < 2) {
             throw new IllegalArgumentException("Длина меньше минимальной");
         }
+
+        AbstractTabulatedFunction.checkSorted(xValues);
+
         for(int i = 0; i < xValues.length; ++i) {
             addNode(xValues[i], yValues[i]);
         }
@@ -249,10 +254,18 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
 
     @Override
     public double interpolate(double x, int floorIndex) {       //интерполяция
-        if (floorIndex == getCount()) return head.prev.y;        //случай правой экстраполяции, просто возвращаем послединй y
+        if (floorIndex < 0 || floorIndex >= getCount() - 1) {
+            throw new exceptions.InterpolationException("Некорректный floorIndex: " + floorIndex);
+        }
 
-        Node left = getNode(floorIndex);        //если мужду двумя x
+        Node left = getNode(floorIndex);        //если между двумя x
         Node right = left.next;
+
+        if (x < left.x || x > right.x) {
+            throw new exceptions.InterpolationException("x=" + x + " вне интервала [" + left.x
+                    + ", " + right.x + "] для интерполяции");
+        }
+
         return interpolate(x, left.x, right.x, left.y, right.y);
     }
 

@@ -1,4 +1,4 @@
-package mathproj;
+package functions;
 
 import functions.ArrayTabulatedFunction;
 import functions.LinkedListTabulatedFunction;

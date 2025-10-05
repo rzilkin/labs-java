@@ -1,4 +1,4 @@
-package mathproj;
+package functions;
 
 import functions.*;
 import org.junit.jupiter.api.Test;

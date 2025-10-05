@@ -1,5 +1,8 @@
 package functions;
 
+import exceptions.ArrayIsNotSortedException;
+import exceptions.DifferentLengthOfArraysException;
+
 // Базовый абстрактный класс для табулированных функций.
 public abstract class AbstractTabulatedFunction implements TabulatedFunction {
 
@@ -43,6 +46,27 @@ public abstract class AbstractTabulatedFunction implements TabulatedFunction {
         return leftY + (x - leftX) * (rightY - leftY) / (rightX - leftX);
     }
 
+    public static void checkLengthIsTheSame(double[] xValues, double[] yValues){
+        if (xValues == null || yValues == null)
+            throw new NullPointerException("xValues и yValues не должны быть пустыми");
+
+        if(xValues.length != yValues.length)
+            throw new DifferentLengthOfArraysException("Длины массивов не совпадают!\nx=" + xValues.length + ", y=" + yValues.length);
+    }
+
+    public static void checkSorted(double[] xValues){
+        if (xValues == null)
+            throw new NullPointerException("xValues не должен быть пустым");
+
+        for (int i = 1; i < xValues.length; i++) {
+            if (!(xValues[i] > xValues[i - 1])) {
+                throw new ArrayIsNotSortedException("xValues должен строго возрастать. Нарушение на парах индексов "
+                        + (i - 1) + "," + i + " (" + xValues[i - 1] + " >= " + xValues[i] + ")"
+                );
+            }
+        }
+
+    }
     /* Логика получения значения функции:
      * - если таблица пуста (count == 0) — бросаем исключение (нет данных);
      * - если count == 1 — всегда возвращаем единственное значение getY(0);

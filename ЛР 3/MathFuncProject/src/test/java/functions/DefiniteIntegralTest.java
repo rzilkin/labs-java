@@ -1,4 +1,4 @@
-package mathproj;
+package functions;
 
 import functions.DefiniteIntegral;
 import functions.MathFunction;

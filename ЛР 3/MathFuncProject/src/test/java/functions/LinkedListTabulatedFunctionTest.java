@@ -1,11 +1,12 @@
-package mathproj;
+package functions;
 
 import functions.LinkedListTabulatedFunction;
 import functions.MathFunction;
+import exceptions.ArrayIsNotSortedException;
+import exceptions.DifferentLengthOfArraysException;
+import exceptions.InterpolationException;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class LinkedListTabulatedFunctionTest {
 
@@ -34,13 +35,13 @@ public class LinkedListTabulatedFunctionTest {
             new LinkedListTabulatedFunction(x, y);
         });
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(exceptions.DifferentLengthOfArraysException.class, () -> {
             double[] x = {1.0};
             double[] y = {2.0, 3.0}; // разная длина
             new LinkedListTabulatedFunction(x, y);
         });
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(exceptions.DifferentLengthOfArraysException.class, () -> {
             double[] x = {1.0, 2.0};
             double[] y = {2.0}; // разная длина
             new LinkedListTabulatedFunction(x, y);
@@ -308,4 +309,31 @@ public class LinkedListTabulatedFunctionTest {
         assertThrows(IndexOutOfBoundsException.class, () -> func.remove(5));
     }
 
+    @Test
+    void throwsOnDifferentLength() {
+        double[] x = {0, 1};
+        double[] y = {42};
+        assertThrows(DifferentLengthOfArraysException.class, () -> new LinkedListTabulatedFunction(x, y));
+    }
+
+    @Test
+    void throwsOnNotSorted() {
+        double[] x = {1, 1};
+        double[] y = {10, 20};
+        assertThrows(ArrayIsNotSortedException.class, () -> new LinkedListTabulatedFunction(x, y));
+    }
+
+    @Test
+    void throwsWhenXOutsideInterval() {
+        double[] x = {0, 1, 2};
+        double[] y = {0, 1, 2};
+        LinkedListTabulatedFunction f = new LinkedListTabulatedFunction(x, y);
+
+        // Интервал [1,2], floorIndex=1 — x=0.5 снаружи
+        assertThrows(InterpolationException.class, () -> {
+            f.interpolate(0.5, 1);
+        });
+
+        assertThrows(InterpolationException.class, () -> f.interpolate(0.5, 1));
+    }
 }

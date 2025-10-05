@@ -1,9 +1,11 @@
-package mathproj;
+package functions;
 
 import functions.ArrayTabulatedFunction;
 import functions.MathFunction;
+import exceptions.ArrayIsNotSortedException;
+import exceptions.DifferentLengthOfArraysException;
+import exceptions.InterpolationException;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ArrayTabulatedFunctionTest {
@@ -71,13 +73,13 @@ public class ArrayTabulatedFunctionTest {
 
         double[] xs = {0.0, 1.0};
         double[] ys = {0.0};
-        assertThrows(IllegalArgumentException.class, () -> new TestableArray(xs, ys));
+        assertThrows(exceptions.DifferentLengthOfArraysException.class, () -> new TestableArray(xs, ys));
 
         assertThrows(IllegalArgumentException.class, () -> new TestableArray(new double[]{}, new double[]{}));
 
         double[] badX = {0.0, 2.0, 1.0};
         double[] y = {0.0, 4.0, 1.0};
-        assertThrows(IllegalArgumentException.class, () -> new TestableArray(badX, y));
+        assertThrows(exceptions.ArrayIsNotSortedException.class, () -> new TestableArray(badX, y));
     }
 
     @Test
@@ -336,5 +338,39 @@ public class ArrayTabulatedFunctionTest {
         arr.remove(1); // удаляем хвост
         assertEquals(1, arr.getCount());
         assertEquals(1.0, arr.getX(0));
+    }
+
+    @Test
+    void throwsOnDifferentLength() {
+        double[] x = {0, 1};
+        double[] y = {10};
+        assertThrows(DifferentLengthOfArraysException.class, () -> new ArrayTabulatedFunction(x, y));
+    }
+
+    @Test
+    void throwsOnNotSorted() {
+        double[] x = {0, 0}; // нестрого
+        double[] y = {10, 20};
+        assertThrows(ArrayIsNotSortedException.class, () -> new ArrayTabulatedFunction(x, y));
+    }
+
+    @Test
+    void throwsWhenXOutsideInterval() {
+        double[] x = {0, 1, 2};
+        double[] y = {0, 1, 2};
+        ArrayTabulatedFunction f = new ArrayTabulatedFunction(x, y);
+
+        assertThrows(InterpolationException.class, () -> {
+            f.interpolate(-0.1, 0);
+        });
+
+        assertThrows(InterpolationException.class, () -> {
+            f.interpolate(1.5, 0);
+        });
+
+        assertDoesNotThrow(() -> {
+            double v = f.interpolate(0.25, 0);
+            assertTrue(v >= 0 && v <= 1);
+        });
     }
 }
