@@ -7,6 +7,7 @@ import exceptions.DifferentLengthOfArraysException;
 import exceptions.InterpolationException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import operations.TabulatedFunctionOperationService;
 
 public class LinkedListTabulatedFunctionTest {
 
@@ -335,5 +336,20 @@ public class LinkedListTabulatedFunctionTest {
         });
 
         assertThrows(InterpolationException.class, () -> f.interpolate(0.5, 1));
+    }
+
+    @Test
+    void returnsAllPointsInOrder_forLinkedListFunction() {
+        double[] x = {-2.0, -1.0, 0.0, 1.0};
+        double[] y = { 4.0,  1.0, 0.0, 1.0};
+        LinkedListTabulatedFunction f = new LinkedListTabulatedFunction(x, y);
+
+        Point[] pts = TabulatedFunctionOperationService.asPoints(f);
+
+        assertEquals(x.length, pts.length);
+        for (int i = 0; i < x.length; i++) {
+            assertEquals(x[i], pts[i].x, 1e-12);
+            assertEquals(y[i], pts[i].y, 1e-12);
+        }
     }
 }

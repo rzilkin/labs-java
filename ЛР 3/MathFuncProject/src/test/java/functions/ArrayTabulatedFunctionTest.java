@@ -1,7 +1,7 @@
 package functions;
 
-import functions.ArrayTabulatedFunction;
-import functions.MathFunction;
+import functions.*;
+import operations.TabulatedFunctionOperationService;
 import exceptions.ArrayIsNotSortedException;
 import exceptions.DifferentLengthOfArraysException;
 import exceptions.InterpolationException;
@@ -410,5 +410,26 @@ public class ArrayTabulatedFunctionTest {
             i++;
         }
         assertEquals(x.length, i);
+    }
+
+    @Test
+    void returnsAllPointsInOrder_forArrayFunction() {
+        double[] x = {0.0, 1.0, 2.0, 3.0};
+        double[] y = {0.0, 1.0, 4.0, 9.0};
+        ArrayTabulatedFunction f = new ArrayTabulatedFunction(x, y);
+
+        Point[] pts = TabulatedFunctionOperationService.asPoints(f);
+
+        assertEquals(x.length, pts.length);
+        for (int i = 0; i < x.length; i++) {
+            assertEquals(x[i], pts[i].x, 1e-12);
+            assertEquals(y[i], pts[i].y, 1e-12);
+        }
+    }
+
+    @Test
+    void throwsOnNull() {
+        assertThrows(NullPointerException.class,
+                () -> TabulatedFunctionOperationService.asPoints(null));
     }
 }
