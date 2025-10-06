@@ -7,6 +7,9 @@ import exceptions.DifferentLengthOfArraysException;
 import exceptions.InterpolationException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class ArrayTabulatedFunctionTest {
 
@@ -372,5 +375,40 @@ public class ArrayTabulatedFunctionTest {
             double v = f.interpolate(0.25, 0);
             assertTrue(v >= 0 && v <= 1);
         });
+    }
+
+    @Test
+    void iteratorWhile_loop_returnsAllPointsInOrder() {
+        double[] x = {2.0, 3.0, 5.0};
+        double[] y = {4.0, 9.0, 25.0};
+        ArrayTabulatedFunction f = new ArrayTabulatedFunction(x, y);
+
+        Iterator<Point> it = f.iterator();
+        List<Double> xs = new ArrayList<>();
+        List<Double> ys = new ArrayList<>();
+
+        while (it.hasNext()) {
+            Point p = it.next();
+            xs.add(p.x);
+            ys.add(p.y);
+        }
+
+        assertArrayEquals(x, xs.stream().mapToDouble(Double::doubleValue).toArray(), 1e-12);
+        assertArrayEquals(y, ys.stream().mapToDouble(Double::doubleValue).toArray(), 1e-12);
+    }
+
+    @Test
+    void iteratorForEach_loop_returnsAllPointsInOrder() {
+        double[] x = {-1.0, 0.0, 1.0, 2.0};
+        double[] y = {1.0, 0.0, 1.0, 4.0};
+        ArrayTabulatedFunction f = new ArrayTabulatedFunction(x, y);
+
+        int i = 0;
+        for (Point p : f) {
+            assertEquals(x[i], p.x, EPS);
+            assertEquals(y[i], p.y, EPS);
+            i++;
+        }
+        assertEquals(x.length, i);
     }
 }

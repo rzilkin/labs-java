@@ -4,6 +4,7 @@ import functions.ArrayTabulatedFunction;
 import functions.LinkedListTabulatedFunction;
 import functions.Point;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import java.util.Iterator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,14 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IteratorAndPointTest {
     @Test
-    void testArrayTabulatedFunctionIteratorThrowsException() {
-        double[] xValues = {1.0, 2.0, 3.0};
-        double[] yValues = {10.0, 20.0, 30.0};
-        ArrayTabulatedFunction func = new ArrayTabulatedFunction(xValues, yValues);
+    void arrayIterator_doesNotThrow_onCreation() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {10.0, 20.0, 30.0};
+        ArrayTabulatedFunction f = new ArrayTabulatedFunction(x, y);
 
-        assertThrows(UnsupportedOperationException.class, () -> {
-            Iterator<Point> iterator = func.iterator();
-        });
+        assertDoesNotThrow(f::iterator); // сам факт, что создаётся итератор
     }
 
     @Test

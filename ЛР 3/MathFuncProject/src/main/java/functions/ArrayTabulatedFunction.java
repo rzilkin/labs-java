@@ -2,6 +2,7 @@ package functions;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.NoSuchElementException;
 import java.util.Iterator;
 import exceptions.DifferentLengthOfArraysException;
 import exceptions.ArrayIsNotSortedException;
@@ -260,6 +261,29 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
 
     @Override
     public Iterator<Point> iterator() {
-        throw new UnsupportedOperationException("Итерация не возможна");
+        return new Iterator<Point>() {
+            private int i = 0;
+
+            @Override
+            public boolean hasNext() {
+                return i < getCount();
+            }
+
+            @Override
+            public Point next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                Point p = new Point(xValues[i], yValues[i]);
+                i++;
+                return p;
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("Итерация не возможна");
+            }
+        };
     }
+
 }
