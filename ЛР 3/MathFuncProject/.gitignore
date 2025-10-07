@@ -15,3 +15,9 @@
 
 # Windows
 Thumbs.db
+
+# Input/Output files
+**/input.txt
+**/output.txt
+**/input
+**/output
