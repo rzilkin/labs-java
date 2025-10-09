@@ -12,6 +12,8 @@ import java.io.IOException;
 public class TabulatedFunctionFileWriter {
     public static void main(String[] args) {
         try {
+            java.nio.file.Files.createDirectories(java.nio.file.Paths.get("output"));
+
             try (FileWriter fwArray = new FileWriter("output/array function.txt");
                  FileWriter fwList  = new FileWriter("output/linked list function.txt");
                  BufferedWriter bwArray = new BufferedWriter(fwArray);
