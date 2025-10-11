@@ -1,14 +1,18 @@
 package functions;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.NoSuchElementException;
 import java.util.Iterator;
 import exceptions.DifferentLengthOfArraysException;
 import exceptions.ArrayIsNotSortedException;
+import java.io.Serializable;
 
 // Реализация TabulatedFunction на основе двух массивов xValues и yValues.
-public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable{
+public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable, Serializable {
+    private static final long serialVersionUID = -9143763512074794060L;
+
     private double[] xValues;
     private double[] yValues;
 
