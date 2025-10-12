@@ -3,10 +3,8 @@ package io;
 import functions.TabulatedFunction;
 import functions.Point;
 import functions.factory.TabulatedFunctionFactory;
-import java.io.BufferedWriter;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+
+import java.io.*;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
@@ -56,6 +54,36 @@ public final class FunctionsIO {
                 yValues[i] = yn.doubleValue();
             } catch (ParseException e) {
                 throw new IOException("Не удалось разобрать числа в строке " + (i + 2) + ": " + line, e);
+            }
+        }
+        return factory.create(xValues, yValues);
+    }
+
+    public static TabulatedFunction readTabulatedFunction(BufferedInputStream inputStream, TabulatedFunctionFactory factory) throws IOException {
+        DataInputStream dataInputStream = new DataInputStream(inputStream);
+
+        int count;
+        try {
+            count = dataInputStream.readInt();
+        } catch (EOFException e) {
+            throw new IOException("Неожиданный конец потока: отсутствует количество точек", e);
+        }
+
+        if(count <= 0) {
+            throw new IOException("Некорректное количество точек: " + count);
+        }
+
+        double[] xValues = new double[count];
+        double[] yValues = new double[count];
+
+        for(int i = 0; i < count; ++i) {
+            try {
+                xValues[i] = dataInputStream.readDouble();
+                yValues[i] = dataInputStream.readDouble();
+            } catch(EOFException e) {
+                throw new IOException("Неожиданный конец потока при чтении точки с индексом " + i, e);
+            } catch(IOException e) {
+                throw new IOException("Ошибка ввода-вывода при чтении точки с индексом " + i, e);
             }
         }
         return factory.create(xValues, yValues);
