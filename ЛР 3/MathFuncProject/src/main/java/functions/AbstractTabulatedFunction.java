@@ -2,10 +2,12 @@ package functions;
 
 import exceptions.ArrayIsNotSortedException;
 import exceptions.DifferentLengthOfArraysException;
+import java.io.Serializable;
 
 // Базовый абстрактный класс для табулированных функций.
-public abstract class AbstractTabulatedFunction implements TabulatedFunction {
+public abstract class AbstractTabulatedFunction implements TabulatedFunction, Serializable {
 
+    private static final long serialVersionUID = -499199225426405919L;
     // Количество точек в таблице.
     private int count = 0;
 
