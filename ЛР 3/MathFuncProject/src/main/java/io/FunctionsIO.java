@@ -8,6 +8,8 @@ import java.io.*;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
+import java.io.BufferedOutputStream;
+import java.io.ObjectOutputStream;
 
 public final class FunctionsIO {
     private FunctionsIO() {
@@ -101,5 +103,12 @@ public final class FunctionsIO {
             }
         }
         return factory.create(xValues, yValues);
+    }
+
+    public static void serialize(BufferedOutputStream stream, TabulatedFunction function) throws IOException {
+        ObjectOutputStream oos = new ObjectOutputStream(stream);
+        oos.writeObject(function);
+        oos.flush();
+        stream.flush();
     }
 }
