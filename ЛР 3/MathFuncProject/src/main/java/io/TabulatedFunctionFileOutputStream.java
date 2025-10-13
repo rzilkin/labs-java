@@ -12,10 +12,10 @@ public class TabulatedFunctionFileOutputStream {
     public static void main(String[] args) {
         try {
             Files.createDirectories(Paths.get("output"));
-            try (FileWriter arrayStream = new FileWriter("output/array function.bin");
-                 FileWriter linkedListStream = new FileWriter("output/linked list function.bin");
-                 BufferedWriter bufferedArrayStream = new BufferedWriter(arrayStream);
-                 BufferedWriter bufferedLinkedListStream = new BufferedWriter(linkedListStream)) {
+            try (FileOutputStream arrayStream = new FileOutputStream("output/array function.bin");
+                 FileOutputStream linkedListStream = new FileOutputStream("output/linked list function.bin");
+                 BufferedOutputStream bufferedArrayStream = new BufferedOutputStream(arrayStream);
+                 BufferedOutputStream bufferedLinkedListStream = new BufferedOutputStream(linkedListStream)) {
                 double[] xValues = {0.0, 1.0, 2.0, 3.0, 4.0};
                 double[] yValues = {0.0, 1.0, 4.0, 9.0, 16.0};
 

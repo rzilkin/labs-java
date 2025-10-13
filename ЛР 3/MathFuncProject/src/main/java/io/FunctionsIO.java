@@ -25,6 +25,20 @@ public final class FunctionsIO {
         } catch(IOException e){}
     }
 
+    public static void writeTabulatedFunction(BufferedOutputStream outputStream, TabulatedFunction function) throws IOException {
+        DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+
+        int count = function.getCount();
+        dataOutputStream.writeInt(count);
+
+        for (Point p : function) {
+            dataOutputStream.writeDouble(p.x);
+            dataOutputStream.writeDouble(p.y);
+        }
+
+        dataOutputStream.flush();
+    }
+
     public static TabulatedFunction readTabulatedFunction(BufferedReader reader,
                                                           TabulatedFunctionFactory factory) throws IOException {
         String line = reader.readLine();
