@@ -1,0 +1,24 @@
+# Maven
+/target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Input/Output files
+**/input.txt
+**/output.txt
+**/input
+**/output
+input/
