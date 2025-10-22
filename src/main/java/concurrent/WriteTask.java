@@ -16,10 +16,12 @@ public class WriteTask implements Runnable {
         int count = func.getCount();
 
         for(int i = 0; i < count; ++i) {
-            double x = func.getX(i);
-            func.setY(i, value);
+            synchronized (func) {
+                double x = func.getX(i);
+                func.setY(i, value);
 
-            System.out.printf("Writing for index %d complete\n", i);
+                System.out.printf("Writing for index %d complete\n", i);
+            }
         }
     }
 }

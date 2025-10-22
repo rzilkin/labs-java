@@ -14,10 +14,12 @@ public class ReadTask implements Runnable {
         int count = func.getCount();
 
         for (int i = 0; i < count; i++) {
-            double x = func.getX(i);
-            double y = func.getY(i);
+            synchronized (func) {
+                double x = func.getX(i);
+                double y = func.getY(i);
 
-            System.out.printf("After read: i = %d, x = %f, y = %f%n", i, x, y);
+                System.out.printf("After read: i = %d, x = %f, y = %f%n", i, x, y);
+            }
         }
     }
 }
