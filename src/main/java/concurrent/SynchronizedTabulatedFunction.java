@@ -9,9 +9,19 @@ public class SynchronizedTabulatedFunction implements TabulatedFunction {
     private final TabulatedFunction func;
     private final Object mutex;
 
+    public interface Operation<T> {
+        T apply(SynchronizedTabulatedFunction sync);
+    }
+
     public SynchronizedTabulatedFunction(TabulatedFunction func) {
         this.func = func;
         this.mutex = this;
+    }
+
+    public <T> T doSynchronously(Operation<? extends T> op) {
+        synchronized (mutex) {
+            return op.apply(this);
+        }
     }
 
     @Override

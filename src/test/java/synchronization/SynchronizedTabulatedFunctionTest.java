@@ -118,4 +118,89 @@ class SynchronizedTabulatedFunctionTest {
         assertFalse(iterator.hasNext());
     }
 
+    @Test
+    void testDoSynchronouslyWithReturnValue() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {10.0, 20.0, 30.0};
+        TabulatedFunction baseFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(baseFunc);
+
+        SynchronizedTabulatedFunction.Operation<Double> sumOperation =
+                function -> {
+                    double sum = 0;
+                    for (Point point : function) {
+                        sum += point.y;
+                    }
+                    return sum;
+                };
+
+        Double result = syncFunc.doSynchronously(sumOperation);
+        assertEquals(60.0, result, 1e-9);
+    }
+
+    @Test
+    void testDoSynchronouslyWithVoid() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {10.0, 20.0, 30.0};
+        TabulatedFunction baseFunc = new LinkedListTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(baseFunc);
+
+        SynchronizedTabulatedFunction.Operation<Void> updateOperation =
+                function -> {
+                    for (int i = 0; i < function.getCount(); i++) {
+                        function.setY(i, function.getY(i) * 2);
+                    }
+                    return null;
+                };
+
+        Void result = syncFunc.doSynchronously(updateOperation);
+        assertNull(result);
+
+        Double checkResult = syncFunc.doSynchronously(func -> func.getY(0));
+        assertEquals(20.0, checkResult, 1e-9);
+    }
+
+    @Test
+    void testDoSynchronouslyComplexOperation() {
+        double[] xValues = {0.0, 1.0, 2.0};
+        double[] yValues = {0.0, 1.0, 4.0};
+        TabulatedFunction baseFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(baseFunc);
+
+        SynchronizedTabulatedFunction.Operation<String> complexOperation =
+                function -> {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("Count: ").append(function.getCount());
+                    sb.append(", Left: ").append(function.leftBound());
+                    sb.append(", Right: ").append(function.rightBound());
+
+                    function.setY(1, 100.0);
+
+                    return sb.toString();
+                };
+
+        String result = syncFunc.doSynchronously(complexOperation);
+        assertEquals("Count: 3, Left: 0.0, Right: 2.0", result);
+
+        Double y1 = syncFunc.doSynchronously(func -> func.getY(1));
+        assertEquals(100.0, y1, 1e-9);
+    }
+
+    @Test
+    void testDoSynchronouslyWithLambda() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {5.0, 6.0, 7.0};
+        TabulatedFunction baseFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(baseFunc);
+
+        Double average = syncFunc.doSynchronously(func -> {
+            double sum = 0;
+            for (int i = 0; i < func.getCount(); i++) {
+                sum += func.getY(i);
+            }
+            return sum / func.getCount();
+        });
+
+        assertEquals(6.0, average, 1e-9);
+    }
 }
