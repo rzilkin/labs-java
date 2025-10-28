@@ -21,7 +21,9 @@ public class MultiplyingTaskExecutor {
             t.start();
         }
 
-        Thread.sleep(2000);
+        for (Thread t : threads) {
+            t.join();
+        }
 
         System.out.println(func.toString());
     }
