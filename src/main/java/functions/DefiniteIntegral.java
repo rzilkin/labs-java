@@ -3,9 +3,13 @@ package functions;
  * методом трапеций с фиксированным шагом.
  */
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefiniteIntegral implements MathFunction {
     public static final double INCREMENT = 1E-4;
+
+    private static final Logger logger = LoggerFactory.getLogger(DefiniteIntegral.class);
 
     private double a;
     private final MathFunction function;
@@ -13,21 +17,31 @@ public class DefiniteIntegral implements MathFunction {
     public DefiniteIntegral(MathFunction function, double a) {
         this.function = function;
         this.a = a;
+        logger.info("Создан определённый интеграл с нижним пределом {} для функции {}", a, function);
     }
 
     public void setLower(double a) {
+        logger.debug("Обновляем нижний предел с {} на {}", this.a, a);
         this.a = a;
     }
 
     private double compute(double start, double end){
+        logger.debug("Вычисляем интеграл от {} до {}", start, end);
         // Обработка частных случаев
-        if (Double.isNaN(start) || Double.isNaN(end)) return Double.NaN;
-        if (start == end) return 0.0;
+        if (Double.isNaN(start) || Double.isNaN(end)) {
+            logger.warn("Границы интегрирования содержат NaN: начало={}, конец={}", start, end);
+            return Double.NaN;
+        }
+        if (start == end) {
+            logger.trace("Границы интегрирования совпадают, возвращаем ноль");
+            return 0.0;
+        }
 
         double modifier = 1.0;
 
         // Пределы в обратном порядке - меняем пределы местами и знак
         if (start > end){
+            logger.debug("Меняем пределы интегрирования местами: {} и {}", start, end);
             double temp = start;
             start = end;
             end = temp;
@@ -56,11 +70,14 @@ public class DefiniteIntegral implements MathFunction {
             area += 0.5 * (function.apply(xPrev) + function.apply(xCurr)) * remainder;
         }
 
-        return area * modifier;
+        double result = area * modifier;
+        logger.debug("Вычисленное значение интеграла: {}", result);
+        return result;
     }
 
     @Override
     public double apply(double x) {
+        logger.debug("Вычисляем интеграл при верхнем пределе {}", x);
         return compute(a, x);
     }
 }

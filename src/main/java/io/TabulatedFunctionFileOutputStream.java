@@ -7,9 +7,14 @@ import functions.TabulatedFunction;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TabulatedFunctionFileOutputStream {
+    private static final Logger logger = LoggerFactory.getLogger(TabulatedFunctionFileOutputStream.class);
+
     public static void main(String[] args) {
+        logger.info("Записываем табулированные функции в бинарные файлы");
         try {
             Files.createDirectories(Paths.get("output"));
             try (FileOutputStream arrayStream = new FileOutputStream("output/array function.bin");
@@ -20,15 +25,17 @@ public class TabulatedFunctionFileOutputStream {
                 double[] yValues = {0.0, 1.0, 4.0, 9.0, 16.0};
 
                 TabulatedFunction funcWithArray = new ArrayTabulatedFunction(xValues, yValues);
+                logger.debug("Функция на массивах подготовлена с количеством точек {}", funcWithArray.getCount());
                 TabulatedFunction funcWithLinkedList = new LinkedListTabulatedFunction(xValues, yValues);
+                logger.debug("Функция на связном списке подготовлена с количеством точек {}", funcWithLinkedList.getCount());
 
                 FunctionsIO.writeTabulatedFunction(bufferedArrayStream, funcWithArray);
                 FunctionsIO.writeTabulatedFunction(bufferedLinkedListStream, funcWithLinkedList);
 
-                System.out.println("Табулированные функции записаны в файлы");
+                logger.info("Табулированные функции записаны в каталог output");
             }
         } catch(IOException e) {
-            e.printStackTrace();
+            logger.error("Не удалось записать табулированные функции в бинарные файлы", e);
         }
     }
 }

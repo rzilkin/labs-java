@@ -5,18 +5,22 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.NoSuchElementException;
 import java.util.Iterator;
-import exceptions.DifferentLengthOfArraysException;
-import exceptions.ArrayIsNotSortedException;
-import java.io.Serializable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import functions.MathFunction;
 
 // Реализация TabulatedFunction на основе двух массивов xValues и yValues.
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable, Serializable {
     private static final long serialVersionUID = -9143763512074794060L;
 
+    private static final Logger logger = LoggerFactory.getLogger(ArrayTabulatedFunction.class);
+
     private double[] xValues;
     private double[] yValues;
 
     public ArrayTabulatedFunction(double[] xValues, double [] yValues){
+        logger.info("Создаём табулированную функцию на массивах с количеством точек {}", xValues == null ? null : xValues.length);
         AbstractTabulatedFunction.checkLengthIsTheSame(xValues, yValues);
 
         if(xValues.length < 2)
@@ -28,9 +32,11 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         this.yValues = Arrays.copyOf(yValues, yValues.length);
 
         setCount(this.xValues.length);
+        logger.debug("Табулированная функция на массивах инициализирована с областью [{}; {}]", this.xValues[0], this.xValues[this.xValues.length - 1]);
     }
 
     public ArrayTabulatedFunction(MathFunction source, double xFrom, double xTo, int count){
+        logger.info("Табулируем функцию {} на интервале от {} до {} с {} точками", source, xFrom, xTo, count);
         Objects.requireNonNull(source, "source не может быть нулевым");
         if (count < 2)
             throw new IllegalArgumentException("count должен быть >= 2");
@@ -57,6 +63,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         // что последний элемент == right
         this.xValues[count - 1] = right;
         setCount(count);
+        logger.debug("Функция табулирована на диапазоне [{}; {}] с шагом {}", left, right, step);
     }
 
     @Override
@@ -64,6 +71,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         if (index < 0 || index >= count)
             throw new IllegalArgumentException("Неверный индекс");
         checkIndex(index);
+        logger.trace("Возвращаем x[{}] = {}", index, xValues[index]);
         return xValues[index];
     }
 
@@ -72,6 +80,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         if (index < 0 || index >= count)
             throw new IllegalArgumentException("Неверный индекс");
         checkIndex(index);
+        logger.trace("Возвращаем y[{}] = {}", index, yValues[index]);
         return yValues[index];
     }
 
@@ -80,6 +89,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         if (index < 0 || index >= count)
             throw new IllegalArgumentException("Неверный индекс для вставки");
         checkIndex(index);
+        logger.debug("Обновляем y[{}]: {} -> {}", index, yValues[index], value);
         yValues[index] = value;
     }
 
@@ -87,6 +97,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     public int indexOfX(double x) {
         // Используем бинарный поиск для точного совпадения
         int idx = Arrays.binarySearch(xValues, x);
+        logger.trace("Точный поиск x={} вернул индекс {}", x, idx);
         return idx >= 0 ? idx : -1;
     }
 
@@ -95,19 +106,23 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         // Линейный поиск по yValues (вдруг неупорядоченны)
         for (int i = 0; i < count; i++) {
             if (Double.compare(yValues[i], y) == 0) {
+                logger.trace("Точный поиск y={} вернул индекс {}", y, i);
                 return i;
             }
         }
+        logger.trace("Точный поиск y={} не дал результатов", y);
         return -1;
     }
 
     @Override
     public double leftBound() {
+        logger.trace("Запрошена левая граница: {}", xValues[0]);
         return xValues[0];
     }
 
     @Override
     public double rightBound() {
+        logger.trace("Запрошена правая граница: {}", xValues[count - 1]);
         return xValues[count - 1];
     }
 
@@ -138,6 +153,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
                 lo = mid;
             }
         }
+        logger.trace("Индекс пола для x={} равен {}", x, lo);
         return lo;
     }
 
@@ -160,6 +176,8 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
                     + rightX + "] для интерполяции");
         }
 
+        logger.trace("Выполняем линейную интерполяцию для x={} между точками ({}, {}) и ({}, {})",
+                x, leftX, leftY, rightX, rightY);
         return super.interpolate(x, leftX, rightX, leftY, rightY);
     }
 
@@ -167,16 +185,20 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     @Override
     protected double extrapolateLeft(double x) {
         int n = count;
-        return super.interpolate(x, xValues[0], xValues[1], yValues[0], yValues[1]);
+        double result = super.interpolate(x, xValues[0], xValues[1], yValues[0], yValues[1]);
+        logger.debug("Левая экстраполяция для x={} дала результат {}", x, result);
+        return result;
     }
 
     // Линейная экстраполяция справа: используем последние два узла (n-2 и n-1)
     @Override
     protected double extrapolateRight(double x) {
         int n = count;
-        return super.interpolate(x,
+        double result = super.interpolate(x,
                 xValues[n - 2], xValues[n - 1],
                 yValues[n - 2], yValues[n - 1]);
+        logger.debug("Правая экстраполяция для x={} дала результат {}", x, result);
+        return result;
     }
 
     // Вспомогательный метод
@@ -190,12 +212,14 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     public void insert(double x, double y) {
         int indexInArray = indexOfX(x);     //узнаём индекс
         if (indexInArray != -1) {       //если индекс существует, то устанавливаем y
+            logger.info("Обновляем существующий узел при x={} новым значением y={}", x, y);
             yValues[indexInArray] = y;
             return;
         }
 
         int indexForInsert = 0;
         if(count == 0){
+            logger.info("Вставляем первую точку ({}, {})", x, y);
             xValues = new double[] { x };
             yValues = new double[] { y };
             setCount(1);
@@ -217,6 +241,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
             }
         }
 
+        logger.debug("Вставляем точку ({}, {}) в позицию {}", x, y, indexForInsert);
         double[] newXValues = new double[count + 1];        //новые массивы для копирования
         double[] newYValues = new double[count + 1];
         //копируем элементы из старых массивов с начала, в новые с начала
@@ -232,6 +257,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         xValues = newXValues;
         yValues = newYValues;
         setCount(count + 1);
+        logger.debug("Размер таблицы после вставки: {}", getCount());
     }
 
     @Override
@@ -244,6 +270,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         int n = count;
         // Если всего один элемент — делаем таблицу пустой (логический размер = 0)
         if (n == 1) {
+            logger.warn("Удаляем единственную точку с индексом {}; таблица станет пустой", index);
             setCount(0);
             return;
         }
@@ -260,6 +287,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
 
         // уменьшаем логический размер
         setCount(n - 1);
+        logger.info("Удалили точку с индексом {}; новый размер {}", index, getCount());
     }
 
     @Override
@@ -277,6 +305,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
+                logger.trace("Итератор возвращает точку с индексом {}", i);
                 Point p = new Point(xValues[i], yValues[i]);
                 i++;
                 return p;
