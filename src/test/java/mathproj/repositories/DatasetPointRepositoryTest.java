@@ -40,10 +40,10 @@ class DatasetPointRepositoryTest extends RepositoryIntegrationTestSupport {
         assertNotNull(firstPoint);
         assertEquals(1, firstPoint.getPointIndex());
 
-//        datasetPointRepository.delete(firstSaved);
-//        assertEquals(2, datasetPointRepository.count());
-//
-//        datasetPointRepository.deleteAll(datasetPointRepository.findAll());
-//        assertEquals(0, datasetPointRepository.count());
+        datasetPointRepository.delete(firstSaved);
+        assertEquals(2, datasetPointRepository.count());
+
+        datasetPointRepository.deleteAll(datasetPointRepository.findAll());
+        assertEquals(0, datasetPointRepository.count());
     }
 }
