@@ -7,3 +7,4 @@ id,elapsed_ms,engine,operation,records_processed
 18,44,FRAMEWORK_ORM,dataset_points#findAll,10000
 19,17,FRAMEWORK_ORM,function_components#findAll,40
 20,39,FRAMEWORK_ORM,dataset_points#count,10000
+22017,28,FRAMEWORK_ORM,users#sortedByUsername,10500
