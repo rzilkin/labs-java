@@ -41,25 +41,20 @@ public abstract class AbstractDaoIntegrationTest {
                     "TRUNCATE TABLE dataset_points, " +
                             "tabulated_datasets, " +
                             "math_functions, " +
-                            "users " +
+                            "users, " +
+                            "performance_metrics " +
                             "RESTART IDENTITY CASCADE"
             );
         }
     }
 
-    @AfterAll
-    void shutdown() {
-        // если в DatabaseConnectionManager есть close() — можно вызвать тут
-        // connectionManager.close();
-    }
-
     private void runSchemaScripts() throws IOException, SQLException {
-        // скрипты должны лежать в src/main/resources/scripts/...
         List<String> scripts = List.of(
                 "scripts/01_create_users.sql",
                 "scripts/03_create_math_functions.sql",
                 "scripts/04_create_tabulated_datasets.sql",
-                "scripts/05_create_dataset_points.sql"
+                "scripts/05_create_dataset_points.sql",
+                "scripts/08_create_performance_metrics.sql"
         );
 
         try (Connection connection = connectionManager.getConnection();

@@ -13,8 +13,11 @@ import java.util.Optional;
 
 public class JdbcTabulatedDatasetDao implements TabulatedDatasetDao {
     private static final String INSERT_SQL = "INSERT INTO tabulated_datasets (function_id, source_type) VALUES (?, ?) RETURNING id";
-    private static final String SELECT_BY_ID_SQL = "SELECT id, function_id, source_type FROM tabulated_datasets WHERE id = ?";
-    private static final String SELECT_BY_FUNCTION_SQL = "SELECT id, function_id, source_type FROM tabulated_datasets WHERE function_id = ? ORDER BY id";
+    private static final String BASE_SELECT_SQL = "SELECT id, function_id, source_type FROM tabulated_datasets";
+    private static final String SELECT_BY_ID_SQL = BASE_SELECT_SQL + " WHERE id = ?";
+    private static final String SELECT_BY_FUNCTION_SQL = BASE_SELECT_SQL + " WHERE function_id = ? ORDER BY id";
+    private static final String SELECT_ALL_SQL = BASE_SELECT_SQL;
+    private static final String SELECT_ALL_ORDER_BY_ID_SQL = BASE_SELECT_SQL + " ORDER BY id";
     private static final String UPDATE_SQL = "UPDATE tabulated_datasets SET function_id = ?, source_type = ? WHERE id = ?";
     private static final String DELETE_SQL = "DELETE FROM tabulated_datasets WHERE id = ?";
 
@@ -50,6 +53,16 @@ public class JdbcTabulatedDatasetDao implements TabulatedDatasetDao {
     @Override
     public List<TabulatedDataset> findByFunctionId(Long functionId) {
         return executeListQuery(SELECT_BY_FUNCTION_SQL, functionId);
+    }
+
+    @Override
+    public List<TabulatedDataset> findAll() {
+        return executeListQuery(SELECT_ALL_SQL);
+    }
+
+    @Override
+    public List<TabulatedDataset> findAllOrderByIdAsc() {
+        return executeListQuery(SELECT_ALL_ORDER_BY_ID_SQL);
     }
 
     @Override

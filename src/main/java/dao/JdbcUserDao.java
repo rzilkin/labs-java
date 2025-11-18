@@ -19,7 +19,9 @@ public class JdbcUserDao implements UserDao {
     private static final String INSERT_SQL = "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING id";
     private static final String SELECT_BY_ID_SQL = "SELECT id, username, password_hash FROM users WHERE id = ?";
     private static final String SELECT_BY_USERNAME_SQL = "SELECT id, username, password_hash FROM users WHERE username = ?";
-    private static final String SELECT_ALL_SQL = "SELECT id, username, password_hash FROM users ORDER BY id";
+    private static final String SELECT_ALL_SQL = "SELECT id, username, password_hash FROM users";
+    private static final String SELECT_ALL_ORDER_BY_ID_SQL = SELECT_ALL_SQL + " ORDER BY id";
+    private static final String SELECT_ALL_ORDER_BY_USERNAME_SQL = SELECT_ALL_SQL + " ORDER BY username";
     private static final String UPDATE_SQL = "UPDATE users SET username = ?, password_hash = ? WHERE id = ?";
     private static final String DELETE_SQL = "DELETE FROM users WHERE id = ?";
 
@@ -60,17 +62,17 @@ public class JdbcUserDao implements UserDao {
 
     @Override
     public List<User> findAll() {
-        try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(SELECT_ALL_SQL);
-             ResultSet rs = statement.executeQuery()) {
-            List<User> result = new ArrayList<>();
-            while (rs.next()) {
-                result.add(mapRow(rs));
-            }
-            return result;
-        } catch (SQLException e) {
-            throw new DaoException("Ошибка загрузки списка пользователей", e);
-        }
+        return findAllOrderByIdAsc();
+    }
+
+    @Override
+    public List<User> findAllOrderByIdAsc() {
+        return executeListQuery(SELECT_ALL_ORDER_BY_ID_SQL);
+    }
+
+    @Override
+    public List<User> findAllOrderByUsernameAsc() {
+        return executeListQuery(SELECT_ALL_ORDER_BY_USERNAME_SQL);
     }
 
     @Override
@@ -118,5 +120,19 @@ public class JdbcUserDao implements UserDao {
         user.setUsername(rs.getString("username"));
         user.setPasswordHash(rs.getString("password_hash"));
         return user;
+    }
+
+    private List<User> executeListQuery(String sql) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet rs = statement.executeQuery()) {
+            List<User> result = new ArrayList<>();
+            while (rs.next()) {
+                result.add(mapRow(rs));
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new DaoException("Ошибка загрузки списка пользователей", e);
+        }
     }
 }

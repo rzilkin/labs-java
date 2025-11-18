@@ -14,6 +14,10 @@ public interface UserDao {
 
     List<User> findAll();
 
+    List<User> findAllOrderByIdAsc();
+
+    List<User> findAllOrderByUsernameAsc();
+
     boolean update(User user);
 
     boolean delete(Long id);

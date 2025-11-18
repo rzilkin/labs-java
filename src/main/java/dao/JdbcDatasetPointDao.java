@@ -14,7 +14,8 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
     private static final String UPSERT_SQL = "INSERT INTO dataset_points (dataset_id, point_index, x_value, y_value) " +
             "VALUES (?, ?, ?, ?) ON CONFLICT (dataset_id, point_index) DO UPDATE SET " +
             "x_value = EXCLUDED.x_value, y_value = EXCLUDED.y_value";
-    private static final String SELECT_BY_DATASET_SQL = "SELECT dataset_id, point_index, x_value, y_value FROM dataset_points WHERE dataset_id = ? ORDER BY point_index";
+    private static final String SELECT_BY_DATASET_ORDER_BY_INDEX_SQL = "SELECT dataset_id, point_index, x_value, y_value FROM dataset_points WHERE dataset_id = ? ORDER BY point_index";
+    private static final String SELECT_BY_DATASET_ORDER_BY_X_SQL = "SELECT dataset_id, point_index, x_value, y_value FROM dataset_points WHERE dataset_id = ? ORDER BY x_value";
     private static final String DELETE_POINT_SQL = "DELETE FROM dataset_points WHERE dataset_id = ? AND point_index = ?";
     private static final String DELETE_ALL_SQL = "DELETE FROM dataset_points WHERE dataset_id = ?";
     private static final String COUNT_SQL = "SELECT COUNT(*) FROM dataset_points WHERE dataset_id = ?";
@@ -49,19 +50,17 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
 
     @Override
     public List<DatasetPoint> findByDatasetId(Long datasetId) {
-        try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(SELECT_BY_DATASET_SQL)) {
-            statement.setObject(1, datasetId);
-            try (ResultSet rs = statement.executeQuery()) {
-                List<DatasetPoint> result = new ArrayList<>();
-                while (rs.next()) {
-                    result.add(mapRow(rs));
-                }
-                return result;
-            }
-        } catch (SQLException e) {
-            throw new DaoException("Ошибка чтения точек набора данных", e);
-        }
+        return findByDatasetIdOrderByPointIndex(datasetId);
+    }
+
+    @Override
+    public List<DatasetPoint> findByDatasetIdOrderByPointIndex(Long datasetId) {
+        return executeDatasetQuery(SELECT_BY_DATASET_ORDER_BY_INDEX_SQL, datasetId);
+    }
+
+    @Override
+    public List<DatasetPoint> findByDatasetIdOrderByXValue(Long datasetId) {
+        return executeDatasetQuery(SELECT_BY_DATASET_ORDER_BY_X_SQL, datasetId);
     }
 
     @Override
@@ -110,5 +109,21 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
         point.setXValue(rs.getBigDecimal("x_value"));
         point.setYValue(rs.getBigDecimal("y_value"));
         return point;
+    }
+
+    private List<DatasetPoint> executeDatasetQuery(String sql, Long datasetId) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, datasetId);
+            try (ResultSet rs = statement.executeQuery()) {
+                List<DatasetPoint> result = new ArrayList<>();
+                while (rs.next()) {
+                    result.add(mapRow(rs));
+                }
+                return result;
+            }
+        } catch (SQLException e) {
+            throw new DaoException("Ошибка чтения точек набора данных", e);
+        }
     }
 }

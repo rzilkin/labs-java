@@ -12,7 +12,13 @@ public interface MathFunctionDao {
 
     List<MathFunction> findByOwner(Long ownerId);
 
+    Optional<MathFunction> findByName(String name);
+
     List<MathFunction> findAll();
+
+    List<MathFunction> findAllOrderByIdAsc();
+
+    List<MathFunction> findAllOrderByNameAsc();
 
     boolean update(MathFunction function);
 

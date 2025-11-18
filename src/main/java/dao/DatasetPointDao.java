@@ -9,6 +9,10 @@ public interface DatasetPointDao {
 
     List<DatasetPoint> findByDatasetId(Long datasetId);
 
+    List<DatasetPoint> findByDatasetIdOrderByPointIndex(Long datasetId);
+
+    List<DatasetPoint> findByDatasetIdOrderByXValue(Long datasetId);
+
     boolean deletePoint(Long datasetId, int pointIndex);
 
     int deleteAllByDataset(Long datasetId);

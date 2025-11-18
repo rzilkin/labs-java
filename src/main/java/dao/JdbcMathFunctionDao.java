@@ -16,17 +16,18 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
             "INSERT INTO math_functions (owner_id, name, function_type, definition_body) " +
                     "VALUES (?, ?, ?, ?::jsonb) RETURNING id";
 
-    private static final String SELECT_BY_ID_SQL =
-            "SELECT id, owner_id, name, function_type, definition_body " +
-                    "FROM math_functions WHERE id = ?";
+    private static final String BASE_SELECT_SQL =
+            "SELECT id, owner_id, name, function_type, definition_body FROM math_functions";
 
-    private static final String SELECT_BY_OWNER_SQL =
-            "SELECT id, owner_id, name, function_type, definition_body " +
-                    "FROM math_functions WHERE owner_id = ? ORDER BY id";
+    private static final String SELECT_BY_ID_SQL = BASE_SELECT_SQL + " WHERE id = ?";
 
-    private static final String SELECT_ALL_SQL =
-            "SELECT id, owner_id, name, function_type, definition_body " +
-                    "FROM math_functions ORDER BY id";
+    private static final String SELECT_BY_NAME_SQL = BASE_SELECT_SQL + " WHERE name = ?";
+
+    private static final String SELECT_BY_OWNER_SQL = BASE_SELECT_SQL + " WHERE owner_id = ? ORDER BY id";
+
+    private static final String SELECT_ALL_ORDER_BY_ID_SQL = BASE_SELECT_SQL + " ORDER BY id";
+
+    private static final String SELECT_ALL_ORDER_BY_NAME_SQL = BASE_SELECT_SQL + " ORDER BY name";
 
     private static final String UPDATE_SQL =
             "UPDATE math_functions " +
@@ -75,8 +76,23 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
     }
 
     @Override
+    public Optional<MathFunction> findByName(String name) {
+        return executeSingleResultQuery(SELECT_BY_NAME_SQL, name);
+    }
+
+    @Override
     public List<MathFunction> findAll() {
-        return executeListQuery(SELECT_ALL_SQL);
+        return findAllOrderByIdAsc();
+    }
+
+    @Override
+    public List<MathFunction> findAllOrderByIdAsc() {
+        return executeListQuery(SELECT_ALL_ORDER_BY_ID_SQL);
+    }
+
+    @Override
+    public List<MathFunction> findAllOrderByNameAsc() {
+        return executeListQuery(SELECT_ALL_ORDER_BY_NAME_SQL);
     }
 
     @Override

@@ -12,6 +12,10 @@ public interface TabulatedDatasetDao {
 
     List<TabulatedDataset> findByFunctionId(Long functionId);
 
+    List<TabulatedDataset> findAll();
+
+    List<TabulatedDataset> findAllOrderByIdAsc();
+
     boolean update(TabulatedDataset dataset);
 
     boolean delete(Long id);
