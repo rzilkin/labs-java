@@ -1,0 +1,9 @@
+id,elapsed_ms,engine,operation,records_processed
+13,14,FRAMEWORK_ORM,users#findAll,50
+14,1,FRAMEWORK_ORM,roles#findAll,3
+15,3,FRAMEWORK_ORM,user_roles#findAll,50
+16,6,FRAMEWORK_ORM,math_functions#findAll,200
+17,4,FRAMEWORK_ORM,tabulated_datasets#findAll,200
+18,44,FRAMEWORK_ORM,dataset_points#findAll,10000
+19,17,FRAMEWORK_ORM,function_components#findAll,40
+20,39,FRAMEWORK_ORM,dataset_points#count,10000
