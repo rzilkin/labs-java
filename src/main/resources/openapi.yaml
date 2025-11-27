@@ -1,0 +1,658 @@
+openapi: 3.1.0
+info:
+  title: MathProject API – Полный унифицированный контракт
+  description: |
+    Единый REST API для веток manual (Servlet+Tomcat+JDBC) и framework (Spring Boot + Spring Data).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Локальный сервер
+
+security:
+  - basicAuth: []
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic Authentication
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message, path]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-26T15:30:45.123Z"
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: "Bad Request"
+        message:
+          type: string
+          example: "Count must be >= 2"
+        path:
+          type: string
+          example: "/api/v1/functions"
+
+    PointDto:
+      type: object
+      required: [x, y]
+      properties:
+        x:
+          type: number
+          format: double
+        y:
+          type: number
+          format: double
+
+    FunctionSummaryDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        type:
+          type: string
+          enum: [ANALYTIC, TABULATED, COMPOSITE]
+        ownerId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        datasetId:
+          type: integer
+          format: int64
+          nullable: true
+        sourceType:
+          type: string
+          enum: [MANUAL, GENERATED, DIFFERENTIATED, INTEGRATED]
+          nullable: true
+
+    FunctionFullDto:
+      allOf:
+        - $ref: '#/components/schemas/FunctionSummaryDto'
+        - type: object
+          properties:
+            points:
+              type: array
+              items:
+                $ref: '#/components/schemas/PointDto'
+              nullable: true
+            components:
+              type: array
+              items:
+                type: integer
+                format: int64
+              nullable: true
+            analyticExpression:
+              type: string
+              nullable: true
+
+    DatasetDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        functionId:
+          type: integer
+          format: int64
+        sourceType:
+          type: string
+          enum: [MANUAL, GENERATED, DIFFERENTIATED, INTEGRATED]
+        pointsCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateAnalyticRequest:
+      type: object
+      required: [name, expression]
+      properties:
+        name:
+          type: string
+          example: "sin(x)"
+        expression:
+          type: string
+          example: "Math.sin(x)"
+
+    CreateTabulatedManualRequest:
+      type: object
+      required: [name, points]
+      properties:
+        name:
+          type: string
+        points:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/PointDto'
+
+    CreateTabulatedFromFunctionRequest:
+      type: object
+      required: [name, sourceFunctionId, count, from, to]
+      properties:
+        name:
+          type: string
+        sourceFunctionId:
+          type: integer
+          format: int64
+        count:
+          type: integer
+          minimum: 2
+        from:
+          type: number
+          format: double
+        to:
+          type: number
+          format: double
+
+    UpdateAnalyticRequest:
+      type: object
+      required: [expression]
+      properties:
+        expression:
+          type: string
+
+    ComponentOperationRequest:
+      type: object
+      required: [componentId]
+      properties:
+        componentId:
+          type: integer
+          format: int64
+        position:
+          type: integer
+          minimum: 0
+          nullable: true
+
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+        password:
+          type: string
+          minLength: 6
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    PerformanceMetricDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        engine:
+          type: string
+          enum: [MANUAL_JDBC, FRAMEWORK_ORM]
+        operation:
+          type: string
+        recordsProcessed:
+          type: integer
+        elapsedMs:
+          type: integer
+        recordedAt:
+          type: string
+          format: date-time
+
+    SaveMetricRequest:
+      type: object
+      required: [operation, recordsProcessed, elapsedMs]
+      properties:
+        operation:
+          type: string
+        recordsProcessed:
+          type: integer
+        elapsedMs:
+          type: integer
+
+paths:
+  /auth/register:
+    post:
+      summary: Регистрация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Пользователь успешно создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer, format: int64 }
+                  username: { type: string }
+        '400':
+          description: Неверные данные
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '409':
+          description: Пользователь уже существует
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/login:
+    post:
+      summary: Вход (Basic Auth)
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Успешный вход
+        '401':
+          description: Неверные учетные данные
+
+  /functions:
+    get:
+      summary: Список функций текущего пользователя
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [ANALYTIC, TABULATED, COMPOSITE]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Список функций
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FunctionSummaryDto'
+
+  /functions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      summary: Полная информация о функции
+      responses:
+        '200':
+          description: Функция найдена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FunctionFullDto' }
+        '404':
+          description: Функция не найдена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+    delete:
+      summary: Удалить функцию
+      responses:
+        '204':
+          description: Функция удалена
+        '403':
+          description: Нет прав
+        '404':
+          description: Не найдена
+
+  /functions/{id}/name:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      summary: Изменить имя функции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Имя обновлено
+
+  /functions/analytic:
+    post:
+      summary: Создать аналитическую функцию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAnalyticRequest' }
+      responses:
+        '201':
+          description: Аналитическая функция создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FunctionFullDto' }
+
+  /functions/analytic/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      summary: Обновить аналитическую функцию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateAnalyticRequest' }
+      responses:
+        '200':
+          description: Выражение обновлено
+
+  /functions/tabulated/manual:
+    post:
+      summary: Создать табулированную функцию вручную
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTabulatedManualRequest' }
+      responses:
+        '201':
+          description: Функция создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FunctionFullDto' }
+
+  /functions/tabulated/from-function:
+    post:
+      summary: Создать табулированную из другой функции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTabulatedFromFunctionRequest' }
+      responses:
+        '201':
+          description: Функция создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FunctionFullDto' }
+
+  /functions/composite:
+    post:
+      summary: Создать составную функцию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, componentIds]
+              properties:
+                name:
+                  type: string
+                componentIds:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: integer
+                    format: int64
+      responses:
+        '201':
+          description: Составная функция создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FunctionFullDto' }
+
+  /functions/{id}/components:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      summary: Получить компоненты составной функции
+      responses:
+        '200':
+          description: Список ID компонентов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: int64
+    post:
+      summary: Добавить компонент
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ComponentOperationRequest' }
+      responses:
+        '201':
+          description: Компонент добавлен
+    delete:
+      summary: Удалить компонент
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [componentId]
+              properties:
+                componentId:
+                  type: integer
+                  format: int64
+      responses:
+        '204':
+          description: Компонент удалён
+
+  /functions/{id}/export:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      summary: Экспорт функции (JSON)
+      responses:
+        '200':
+          description: JSON-представление функции
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /functions/import:
+    post:
+      summary: Импорт функции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Функция импортирована
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FunctionFullDto' }
+
+  /operations/{op}:
+    parameters:
+      - name: op
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [add, subtract, multiply, divide]
+    post:
+      summary: Бинарные операции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leftId, rightId]
+              properties:
+                leftId:
+                  type: integer
+                  format: int64
+                rightId:
+                  type: integer
+                  format: int64
+      responses:
+        '201':
+          description: Результат операции сохранён как новая функция
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FunctionFullDto' }
+
+  /operations/differentiate/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      summary: Дифференцирование
+      responses:
+        '201':
+          description: Производная создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FunctionFullDto' }
+
+  /operations/integrate/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      summary: Интегрирование
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                threads:
+                  type: integer
+                  minimum: 1
+                  maximum: 64
+                  default: 8
+      responses:
+        '200':
+          description: Значение интеграла
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value:
+                    type: number
+                    format: double
+
+  /metrics:
+    get:
+      summary: Все метрики производительности
+      responses:
+        '200':
+          description: Список метрик
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PerformanceMetricDto'
+    post:
+      summary: Сохранить метрику
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SaveMetricRequest' }
+      responses:
+        '201':
+          description: Метрика сохранена
+
+  /engine:
+    get:
+      summary: Текущий backend
+      responses:
+        '200':
+          description: manual | framework
+          content:
+            text/plain:
+              schema:
+                type: string
+                enum: [manual, framework]
+    post:
+      summary: Переключить backend (демо)
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              enum: [manual, framework]
+      responses:
+        '200':
+          description: Backend переключён
