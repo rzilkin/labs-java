@@ -153,7 +153,7 @@ class DtoTransformerTest {
         data.put("recordsProcessed", 1000);
         data.put("elapsedMs", 150);
 
-        PerfomanceMetrics metrics = transformer.transformToPerformanceMetrics(data);
+        PerformanceMetrics metrics = transformer.transformToPerformanceMetrics(data);
 
         assertNotNull(metrics);
         assertEquals(100L, metrics.getId());

@@ -119,10 +119,10 @@ public class DTOTransformer {
         }
     }
 
-    public PerfomanceMetrics transformToPerformanceMetrics(Map<String, Object> data) {
+    public PerformanceMetrics transformToPerformanceMetrics(Map<String, Object> data) {
         logger.debug("Преобразование данных в проверку мощности: {}", data);
         try {
-            PerfomanceMetrics metrics = new PerfomanceMetrics();
+            PerformanceMetrics metrics = new PerformanceMetrics();
             metrics.setId(getLongValue(data.get("id")));
             metrics.setEngine((String) data.get("engine"));
             metrics.setOperation((String) data.get("operation"));

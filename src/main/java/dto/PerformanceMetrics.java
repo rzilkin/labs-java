@@ -2,16 +2,16 @@ package dto;
 
 import java.util.Objects;
 
-public class PerfomanceMetrics {
+public class PerformanceMetrics {
     private Long id;
     private String engine;
     private String operation;
     private Integer recordsProcessed;
     private Integer elapsedMs;
 
-    public PerfomanceMetrics() {}
+    public PerformanceMetrics() {}
 
-    public PerfomanceMetrics(Long id, String engine, String operation, Integer recordsProcessed, Integer elapsedMs) {
+    public PerformanceMetrics(Long id, String engine, String operation, Integer recordsProcessed, Integer elapsedMs) {
         this.id = id;
         this.engine = engine;
         this.operation = operation;
@@ -54,7 +54,7 @@ public class PerfomanceMetrics {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PerfomanceMetrics that = (PerfomanceMetrics) o;
+        PerformanceMetrics that = (PerformanceMetrics) o;
         return Objects.equals(id, that.id) &&
                 Objects.equals(engine, that.engine) &&
                 Objects.equals(operation, that.operation) &&

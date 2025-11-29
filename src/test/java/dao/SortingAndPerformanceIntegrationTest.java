@@ -2,7 +2,7 @@ package dao;
 
 import dto.DatasetPoint;
 import dto.MathFunction;
-import dto.PerfomanceMetrics;
+import dto.PerformanceMetrics;
 import dto.TabulatedDataset;
 import dto.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -239,7 +239,7 @@ class SortingAndPerformanceIntegrationTest extends AbstractDaoIntegrationTest {
     }
 
     private void recordMetric(String operation, int recordsProcessed, long elapsedMs) {
-        PerfomanceMetrics metrics = new PerfomanceMetrics();
+        PerformanceMetrics metrics = new PerformanceMetrics();
         metrics.setEngine(ENGINE);
         metrics.setOperation(operation);
         metrics.setRecordsProcessed(recordsProcessed);

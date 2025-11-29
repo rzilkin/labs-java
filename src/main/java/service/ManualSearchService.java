@@ -9,7 +9,7 @@ import dao.UserDao;
 import dto.DatasetPoint;
 import dto.FunctionComponents;
 import dto.MathFunction;
-import dto.PerfomanceMetrics;
+import dto.PerformanceMetrics;
 import dto.TabulatedDataset;
 import dto.User;
 import org.slf4j.Logger;
@@ -155,23 +155,23 @@ public class ManualSearchService {
         return points;
     }
 
-    public List<PerfomanceMetrics> findAllPerformanceMetrics() {
+    public List<PerformanceMetrics> findAllPerformanceMetrics() {
         logger.info("Загрузка всех метрик производительности");
-        List<PerfomanceMetrics> metrics = performanceMetricDao.findAll();
+        List<PerformanceMetrics> metrics = performanceMetricDao.findAll();
         logger.info("Загружено {} метрик", metrics.size());
         return metrics;
     }
 
-    public List<PerfomanceMetrics> findPerformanceMetricsOrderByElapsed() {
+    public List<PerformanceMetrics> findPerformanceMetricsOrderByElapsed() {
         logger.info("Загрузка метрик производительности по времени выполнения");
-        List<PerfomanceMetrics> metrics = performanceMetricDao.findAllOrderByElapsedMsAsc();
+        List<PerformanceMetrics> metrics = performanceMetricDao.findAllOrderByElapsedMsAsc();
         logger.info("Загружено {} метрик", metrics.size());
         return metrics;
     }
 
-    public List<PerfomanceMetrics> findPerformanceMetricsOrderByRecordsProcessed() {
+    public List<PerformanceMetrics> findPerformanceMetricsOrderByRecordsProcessed() {
         logger.info("Загрузка метрик производительности по количеству обработанных записей");
-        List<PerfomanceMetrics> metrics = performanceMetricDao.findAllOrderByRecordsProcessedDesc();
+        List<PerformanceMetrics> metrics = performanceMetricDao.findAllOrderByRecordsProcessedDesc();
         logger.info("Загружено {} метрик", metrics.size());
         return metrics;
     }

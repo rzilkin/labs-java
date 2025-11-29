@@ -1,15 +1,15 @@
 package dao;
 
-import dto.PerfomanceMetrics;
+import dto.PerformanceMetrics;
 
 import java.util.List;
 
 public interface PerformanceMetricDao {
-    PerfomanceMetrics create(PerfomanceMetrics metric);
+    PerformanceMetrics create(PerformanceMetrics metric);
 
-    List<PerfomanceMetrics> findAll();
+    List<PerformanceMetrics> findAll();
 
-    List<PerfomanceMetrics> findAllOrderByElapsedMsAsc();
+    List<PerformanceMetrics> findAllOrderByElapsedMsAsc();
 
-    List<PerfomanceMetrics> findAllOrderByRecordsProcessedDesc();
+    List<PerformanceMetrics> findAllOrderByRecordsProcessedDesc();
 }

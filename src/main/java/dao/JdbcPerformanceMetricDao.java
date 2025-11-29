@@ -1,7 +1,7 @@
 package dao;
 
 import db.DatabaseConnectionManager;
-import dto.PerfomanceMetrics;
+import dto.PerformanceMetrics;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,7 +26,7 @@ public class JdbcPerformanceMetricDao implements PerformanceMetricDao {
     }
 
     @Override
-    public PerfomanceMetrics create(PerfomanceMetrics metric) {
+    public PerformanceMetrics create(PerformanceMetrics metric) {
         try (Connection connection = connectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {
             statement.setString(1, metric.getEngine());
@@ -46,25 +46,25 @@ public class JdbcPerformanceMetricDao implements PerformanceMetricDao {
     }
 
     @Override
-    public List<PerfomanceMetrics> findAll() {
+    public List<PerformanceMetrics> findAll() {
         return executeListQuery(BASE_SELECT_SQL);
     }
 
     @Override
-    public List<PerfomanceMetrics> findAllOrderByElapsedMsAsc() {
+    public List<PerformanceMetrics> findAllOrderByElapsedMsAsc() {
         return executeListQuery(SELECT_ORDER_BY_ELAPSED);
     }
 
     @Override
-    public List<PerfomanceMetrics> findAllOrderByRecordsProcessedDesc() {
+    public List<PerformanceMetrics> findAllOrderByRecordsProcessedDesc() {
         return executeListQuery(SELECT_ORDER_BY_RECORDS_DESC);
     }
 
-    private List<PerfomanceMetrics> executeListQuery(String sql) {
+    private List<PerformanceMetrics> executeListQuery(String sql) {
         try (Connection connection = connectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet rs = statement.executeQuery()) {
-            List<PerfomanceMetrics> metrics = new ArrayList<>();
+            List<PerformanceMetrics> metrics = new ArrayList<>();
             while (rs.next()) {
                 metrics.add(mapRow(rs));
             }
@@ -74,8 +74,8 @@ public class JdbcPerformanceMetricDao implements PerformanceMetricDao {
         }
     }
 
-    private PerfomanceMetrics mapRow(ResultSet rs) throws SQLException {
-        PerfomanceMetrics metric = new PerfomanceMetrics();
+    private PerformanceMetrics mapRow(ResultSet rs) throws SQLException {
+        PerformanceMetrics metric = new PerformanceMetrics();
         metric.setId(rs.getLong("id"));
         metric.setEngine(rs.getString("engine"));
         metric.setOperation(rs.getString("operation"));
