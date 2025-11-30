@@ -196,4 +196,9 @@ public class SearchService {
         logger.info("Поиск метрик производительности с сортировкой по записям");
         return performanceMetricRepository.findAllByOrderByRecordsProcessedDesc();
     }
+
+    public List<UserRole> findAllUserRoles() {
+        logger.info("Множественный поиск всех UserRole");
+        return userRoleRepository.findAll();
+    }
 }
