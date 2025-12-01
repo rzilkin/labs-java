@@ -1,0 +1,672 @@
+{
+  "info": {
+    "_postman_id": "e2e7bda7-0000-4c22-9a1d-collection",
+    "name": "MathProject API v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection covering MathProject API for manual servlet implementation. Auth is intentionally left blank so Basic Auth can be added later."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api/v1" },
+    { "key": "username", "value": "demo" },
+    { "key": "password", "value": "demo123" },
+    { "key": "functionId1", "value": "" },
+    { "key": "functionId2", "value": "" },
+    { "key": "functionId3", "value": "" },
+    { "key": "functionId4", "value": "" },
+    { "key": "datasetId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Register returns 201/400/409', function () {",
+              "  pm.expect([201,400,409]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.test('Registration payload has id and username', function () {",
+              "    pm.expect(json).to.have.property('id');",
+              "    pm.expect(json).to.have.property('username');",
+              "  });",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Login (Basic Auth placeholder)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login returns 200 or 401 without auth header', function () {",
+              "  pm.expect([200,401]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Create Analytic",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"sin(x)\",\n  \"expression\": \"Math.sin(x)\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/functions/analytic", "host": ["{{baseUrl}}"], "path": ["functions", "analytic"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Analytic creation returns 201 or 401', function () {",
+              "  pm.expect([201,401]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.environment.set('functionId1', json.id);",
+              "  pm.test('Analytic has id and analyticExpression', function () {",
+              "    pm.expect(json).to.have.property('id');",
+              "    pm.expect(json).to.have.property('analyticExpression');",
+              "  });",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Create Tabulated Manual",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Manual tabulation\",\n  \"points\": [\n    {\"x\": 0, \"y\": 0},\n    {\"x\": 1, \"y\": 1}\n  ]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/functions/tabulated/manual", "host": ["{{baseUrl}}"], "path": ["functions", "tabulated", "manual"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Tabulated manual returns 201 or 401', function () {",
+              "  pm.expect([201,401,400]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.environment.set('functionId2', json.id);",
+              "  if (json.datasetId) { pm.environment.set('datasetId', json.datasetId); }",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Create Tabulated From Function",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Generated tabulation\",\n  \"sourceFunctionId\": {{functionId1}},\n  \"count\": 5,\n  \"from\": 0,\n  \"to\": 1\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/functions/tabulated/from-function", "host": ["{{baseUrl}}"], "path": ["functions", "tabulated", "from-function"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Tabulated from function returns 201/400/401', function () {",
+              "  pm.expect([201,400,401,404]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.environment.set('functionId3', json.id);",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Create Composite",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Composite sample\",\n  \"componentIds\": [{{functionId1}}, {{functionId2}}]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/functions/composite", "host": ["{{baseUrl}}"], "path": ["functions", "composite"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Composite returns 201/400/401', function () {",
+              "  pm.expect([201,400,401,404]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.environment.set('functionId4', json.id);",
+              "  if (Array.isArray(json.components)) { pm.test('Composite has components array', function () { pm.expect(json.components).to.be.an('array'); }); }",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - List",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/functions?type=&search=&page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["functions"],
+          "query": [
+            { "key": "type", "value": "" },
+            { "key": "search", "value": "" },
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "20" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('List returns 200 or 401', function () {",
+              "  pm.expect([200,401]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 200) {",
+              "  const json = pm.response.json();",
+              "  pm.test('List is array', function () { pm.expect(json).to.be.an('array'); });",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Get by Id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/functions/{{functionId1}}", "host": ["{{baseUrl}}"], "path": ["functions", "{{functionId1}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Get returns 200/401/404', function () {",
+              "  pm.expect([200,401,404]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 200) {",
+              "  const json = pm.response.json();",
+              "  pm.test('Function has id', function () { pm.expect(json).to.have.property('id'); });",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Rename",
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Renamed function\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/functions/{{functionId1}}/name", "host": ["{{baseUrl}}"], "path": ["functions", "{{functionId1}}", "name"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rename returns 200/401/404', function () {",
+              "  pm.expect([200,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Components Get",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/functions/{{functionId4}}/components", "host": ["{{baseUrl}}"], "path": ["functions", "{{functionId4}}", "components"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Components list returns 200/401/404', function () {",
+              "  pm.expect([200,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Components Add",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"componentId\": {{functionId2}},\n  \"position\": 0\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/functions/{{functionId4}}/components", "host": ["{{baseUrl}}"], "path": ["functions", "{{functionId4}}", "components"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Components add returns 201/401/404', function () {",
+              "  pm.expect([201,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Components Delete",
+      "request": {
+        "method": "DELETE",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"componentId\": {{functionId2}}\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/functions/{{functionId4}}/components", "host": ["{{baseUrl}}"], "path": ["functions", "{{functionId4}}", "components"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Components delete returns 204/401/404', function () {",
+              "  pm.expect([204,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Delete",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/functions/{{functionId3}}", "host": ["{{baseUrl}}"], "path": ["functions", "{{functionId3}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Delete returns 204/401/404', function () {",
+              "  pm.expect([204,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Export",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/functions/{{functionId1}}/export", "host": ["{{baseUrl}}"], "path": ["functions", "{{functionId1}}", "export"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Export returns 200/401/404', function () {",
+              "  pm.expect([200,401,404]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 200) { pm.test('Export has body', function () { pm.response.to.have.body; }); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Import",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/functions/import", "host": ["{{baseUrl}}"], "path": ["functions", "import"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Import returns 201/400/401', function () {",
+              "  pm.expect([201,400,401]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) { pm.environment.set('functionId5', pm.response.json().id); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operations - Add",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"leftId\": {{functionId1}},\n  \"rightId\": {{functionId2}}\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/operations/add", "host": ["{{baseUrl}}"], "path": ["operations", "add"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Add returns 201/401/404', function () {",
+              "  pm.expect([201,401,404]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) { pm.environment.set('functionIdAdd', pm.response.json().id); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operations - Subtract",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"leftId\": {{functionId1}},\n  \"rightId\": {{functionId2}}\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/operations/subtract", "host": ["{{baseUrl}}"], "path": ["operations", "subtract"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Subtract returns 201/401/404', function () {",
+              "  pm.expect([201,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operations - Multiply",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"leftId\": {{functionId1}},\n  \"rightId\": {{functionId2}}\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/operations/multiply", "host": ["{{baseUrl}}"], "path": ["operations", "multiply"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Multiply returns 201/401/404', function () {",
+              "  pm.expect([201,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operations - Divide",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"leftId\": {{functionId1}},\n  \"rightId\": {{functionId2}}\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/operations/divide", "host": ["{{baseUrl}}"], "path": ["operations", "divide"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Divide returns 201/400/401/404', function () {",
+              "  pm.expect([201,400,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operations - Differentiate",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/operations/differentiate/{{functionId1}}", "host": ["{{baseUrl}}"], "path": ["operations", "differentiate", "{{functionId1}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Differentiate returns 201/401/404', function () {",
+              "  pm.expect([201,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operations - Integrate",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"threads\": 4\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/operations/integrate/{{functionId1}}", "host": ["{{baseUrl}}"], "path": ["operations", "integrate", "{{functionId1}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Integrate returns 200/401/404', function () {",
+              "  pm.expect([200,401,404]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 200) {",
+              "  const json = pm.response.json();",
+              "  pm.test('Integrate response has value', function () { pm.expect(json).to.have.property('value'); });",
+              "}",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functions - Update Analytic",
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"expression\": \"Math.cos(x)\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/functions/analytic/{{functionId1}}", "host": ["{{baseUrl}}"], "path": ["functions", "analytic", "{{functionId1}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Update analytic returns 200/401/404', function () {",
+              "  pm.expect([200,401,404]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Metrics - Get",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/metrics", "host": ["{{baseUrl}}"], "path": ["metrics"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Metrics list returns 200/401', function () {",
+              "  pm.expect([200,401]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 200) { pm.test('Metrics response is array', function () { pm.expect(pm.response.json()).to.be.an('array'); }); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Metrics - Save",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"operation\": \"demo\",\n  \"recordsProcessed\": 10,\n  \"elapsedMs\": 15\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/metrics", "host": ["{{baseUrl}}"], "path": ["metrics"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Save metric returns 201/401', function () {",
+              "  pm.expect([201,401]).to.include(pm.response.code);",
+              "});",
+              "if (pm.response.code === 201) { pm.test('Metric has id', function () { pm.expect(pm.response.json()).to.have.property('id'); }); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Engine - Get",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/engine", "host": ["{{baseUrl}}"], "path": ["engine"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Engine returns 200', function () {",
+              "  pm.expect([200,401]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Engine - Switch",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "text/plain" } ],
+        "body": { "mode": "raw", "raw": "manual" },
+        "url": { "raw": "{{baseUrl}}/engine", "host": ["{{baseUrl}}"], "path": ["engine"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Engine switch returns 200/401', function () {",
+              "  pm.expect([200,401]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}
