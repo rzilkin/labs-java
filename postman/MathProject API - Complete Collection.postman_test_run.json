@@ -1,0 +1,894 @@
+{
+	"id": "859ea172-4832-413d-89aa-193189dcecb9",
+	"name": "MathProject API - Complete Collection",
+	"timestamp": "2025-12-18T14:38:10.765Z",
+	"collection_id": "50817117-cf60788b-90d8-48d8-883c-1cc3685218ec",
+	"folder_id": 0,
+	"environment_id": "0",
+	"totalPass": 22,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-12-18T14:38:03.122Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "162f738f-d4de-495e-915e-c67906a95181",
+			"name": "Register User",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/auth/register",
+			"time": 104,
+			"responseCode": {
+				"code": 409,
+				"name": "Conflict"
+			},
+			"tests": {
+				"Status code is 201 or 409": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201 or 409": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				104
+			],
+			"allTests": [
+				{
+					"Status code is 201 or 409": true
+				}
+			]
+		},
+		{
+			"id": "15c5c106-7a33-4a56-a39a-ab83e614385e",
+			"name": "Login (Basic Auth)",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/auth/login",
+			"time": 27,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response has id and username": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has id and username": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				27
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response has id and username": true
+				}
+			]
+		},
+		{
+			"id": "7cff0c32-63f9-493a-917e-4180add31c47",
+			"name": "Create Analytic Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/analytic",
+			"time": 43,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Status code is 201": true,
+				"Variable saved successfully": true,
+				"Response has id property": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Variable saved successfully": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has id property": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				43
+			],
+			"allTests": [
+				{
+					"Status code is 201": true,
+					"Variable saved successfully": true,
+					"Response has id property": true
+				}
+			]
+		},
+		{
+			"id": "6d2b33e5-3ec1-4c0d-acbc-973bd465f030",
+			"name": "Create Another Analytic Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/analytic",
+			"time": 37,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Status code is 201": true,
+				"Variable saved successfully": true,
+				"Response has id property": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Variable saved successfully": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has id property": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				37
+			],
+			"allTests": [
+				{
+					"Status code is 201": true,
+					"Variable saved successfully": true,
+					"Response has id property": true
+				}
+			]
+		},
+		{
+			"id": "cfbf7209-ca40-4480-8922-16572b0524e5",
+			"name": "Create Tabulated Function (Manual)",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/tabulated/manual",
+			"time": 139,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Status code is 201": true,
+				"Variable saved successfully": true,
+				"Response has id property": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Variable saved successfully": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has id property": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				139
+			],
+			"allTests": [
+				{
+					"Status code is 201": true,
+					"Variable saved successfully": true,
+					"Response has id property": true
+				}
+			]
+		},
+		{
+			"id": "e2c4963f-4918-4d0d-98a3-e79c0ad9315f",
+			"name": "Create Tabulated Function (From Function)",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/tabulated/from-function",
+			"time": 228,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				228
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "e7a88883-f168-45ac-bbb3-fb8d1c8190df",
+			"name": "Create Composite Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/composite",
+			"time": 99,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Status code is 201": true,
+				"Variable saved successfully": true,
+				"Response has id property": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Variable saved successfully": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has id property": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				99
+			],
+			"allTests": [
+				{
+					"Status code is 201": true,
+					"Variable saved successfully": true,
+					"Response has id property": true
+				}
+			]
+		},
+		{
+			"id": "e5cc4ee8-61ad-46d9-9ef4-fa2b838acd77",
+			"name": "Get All Functions",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions",
+			"time": 851,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				851
+			],
+			"allTests": [
+				{
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "86402203-68e2-41ba-a163-e10ef60838b3",
+			"name": "Get Functions with Filters",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions?type=ANALYTIC&search=sin&page=0&size=20",
+			"time": 796,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				796
+			],
+			"allTests": [
+				{
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "4545f294-a002-4ea9-b05b-3daf8682324d",
+			"name": "Get Function by ID",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/3",
+			"time": 205,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response has id": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has id": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				205
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response has id": true
+				}
+			]
+		},
+		{
+			"id": "2b2d0b0c-fbb8-4656-b59a-aea0cbef994b",
+			"name": "Update Function Name",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/3/name",
+			"time": 84,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				84
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "c8307b8d-0ebd-4c2a-b688-579ff7cd11f9",
+			"name": "Update Analytic Function Expression",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/analytic/3",
+			"time": 101,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				101
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "a6769338-7207-49a2-b7f8-1ee54d198cd1",
+			"name": "Get Components",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/7/components",
+			"time": 429,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				429
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "44e47c22-bb7e-484c-b68b-4a92ede7076b",
+			"name": "Add Component",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/7/components",
+			"time": 89,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				89
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "ba9bd97c-d41d-4136-a4eb-5b21e5bac1f0",
+			"name": "Remove Component",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/7/components",
+			"time": 72,
+			"responseCode": {
+				"code": 204,
+				"name": "No Content"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				72
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "6a561373-726b-430e-8e3f-7b12e90e1b8a",
+			"name": "Binary Operation - Subtract",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/operations/subtract",
+			"time": 299,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				299
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "d668f707-7132-4db8-9519-3cdacf072dcc",
+			"name": "Binary Operation - Add",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/operations/add",
+			"time": 274,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				274
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "2e693ecc-7ea1-415a-80a2-86a8b80bbc3b",
+			"name": "Binary Operation - Multiply",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/operations/multiply",
+			"time": 266,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				266
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "05fc4a41-4179-4286-bd92-3411af761c2b",
+			"name": "Binary Operation - Divide",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/operations/divide",
+			"time": 258,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				258
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "042f2125-8ea6-446e-8044-6869907511e1",
+			"name": "Differentiate Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/operations/differentiate/5",
+			"time": 1007,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				1007
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "2fcc58f2-bb06-4de4-b64b-14e8fe0bf1b4",
+			"name": "Integrate Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/operations/integrate/5",
+			"time": 509,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				509
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "c0d45269-b91b-4b42-bda7-ec549a794727",
+			"name": "Export Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/3/export",
+			"time": 65,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				65
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "1ddbf450-5251-4599-93c1-ebec43dbc08a",
+			"name": "Import Analytic Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/import",
+			"time": 37,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				37
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "1a998d5d-17e4-4838-98cd-cde4d9242ac6",
+			"name": "Import Tabulated Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/import",
+			"time": 105,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				105
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "33990013-0f49-4900-8ea7-7e9c119bb546",
+			"name": "Import Composite Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/import",
+			"time": 67,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				67
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "fa380ae5-64af-46d8-9428-5c481f9c7f02",
+			"name": "Get All Metrics",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/metrics",
+			"time": 20,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				20
+			],
+			"allTests": [
+				{
+					"Status code is 200": true
+				}
+			]
+		},
+		{
+			"id": "6f4281c9-7f36-4a17-9911-9e0828161414",
+			"name": "Save Metric",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/metrics",
+			"time": 42,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Status code is 201": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				42
+			],
+			"allTests": [
+				{
+					"Status code is 201": true
+				}
+			]
+		},
+		{
+			"id": "71a931e2-ac62-4925-bedc-736e6f47904d",
+			"name": "Save Metric with Engine",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/metrics",
+			"time": 33,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Status code is 201": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				33
+			],
+			"allTests": [
+				{
+					"Status code is 201": true
+				}
+			]
+		},
+		{
+			"id": "a7a2faab-054e-43ad-b0e4-05e47c71526f",
+			"name": "Get Current Engine",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/engine",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "3fdb446b-aadf-4f66-ac0e-aba065faf6e0",
+			"name": "Switch Engine to Manual",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/engine",
+			"time": 1,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				1
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "8ffbea7e-3e1c-4097-af1b-d94c755a8408",
+			"name": "Switch Engine to Framework",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/engine",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				2
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "d7dc182c-ee5d-4f9a-925d-d22a1d212d66",
+			"name": "Delete Function",
+			"url": "http://localhost:8080/mathproj-labs/api/v1/functions/3",
+			"time": 63,
+			"responseCode": {
+				"code": 204,
+				"name": "No Content"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				63
+			],
+			"allTests": [
+				{}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 6354,
+	"collection": {
+		"requests": [
+			{
+				"id": "162f738f-d4de-495e-915e-c67906a95181",
+				"method": "POST"
+			},
+			{
+				"id": "15c5c106-7a33-4a56-a39a-ab83e614385e",
+				"method": "POST"
+			},
+			{
+				"id": "7cff0c32-63f9-493a-917e-4180add31c47",
+				"method": "POST"
+			},
+			{
+				"id": "6d2b33e5-3ec1-4c0d-acbc-973bd465f030",
+				"method": "POST"
+			},
+			{
+				"id": "cfbf7209-ca40-4480-8922-16572b0524e5",
+				"method": "POST"
+			},
+			{
+				"id": "e2c4963f-4918-4d0d-98a3-e79c0ad9315f",
+				"method": "POST"
+			},
+			{
+				"id": "e7a88883-f168-45ac-bbb3-fb8d1c8190df",
+				"method": "POST"
+			},
+			{
+				"id": "e5cc4ee8-61ad-46d9-9ef4-fa2b838acd77",
+				"method": "GET"
+			},
+			{
+				"id": "86402203-68e2-41ba-a163-e10ef60838b3",
+				"method": "GET"
+			},
+			{
+				"id": "4545f294-a002-4ea9-b05b-3daf8682324d",
+				"method": "GET"
+			},
+			{
+				"id": "2b2d0b0c-fbb8-4656-b59a-aea0cbef994b",
+				"method": "PUT"
+			},
+			{
+				"id": "c8307b8d-0ebd-4c2a-b688-579ff7cd11f9",
+				"method": "PUT"
+			},
+			{
+				"id": "a6769338-7207-49a2-b7f8-1ee54d198cd1",
+				"method": "GET"
+			},
+			{
+				"id": "44e47c22-bb7e-484c-b68b-4a92ede7076b",
+				"method": "POST"
+			},
+			{
+				"id": "ba9bd97c-d41d-4136-a4eb-5b21e5bac1f0",
+				"method": "DELETE"
+			},
+			{
+				"id": "6a561373-726b-430e-8e3f-7b12e90e1b8a",
+				"method": "POST"
+			},
+			{
+				"id": "d668f707-7132-4db8-9519-3cdacf072dcc",
+				"method": "POST"
+			},
+			{
+				"id": "2e693ecc-7ea1-415a-80a2-86a8b80bbc3b",
+				"method": "POST"
+			},
+			{
+				"id": "05fc4a41-4179-4286-bd92-3411af761c2b",
+				"method": "POST"
+			},
+			{
+				"id": "042f2125-8ea6-446e-8044-6869907511e1",
+				"method": "POST"
+			},
+			{
+				"id": "2fcc58f2-bb06-4de4-b64b-14e8fe0bf1b4",
+				"method": "POST"
+			},
+			{
+				"id": "c0d45269-b91b-4b42-bda7-ec549a794727",
+				"method": "GET"
+			},
+			{
+				"id": "1ddbf450-5251-4599-93c1-ebec43dbc08a",
+				"method": "POST"
+			},
+			{
+				"id": "1a998d5d-17e4-4838-98cd-cde4d9242ac6",
+				"method": "POST"
+			},
+			{
+				"id": "33990013-0f49-4900-8ea7-7e9c119bb546",
+				"method": "POST"
+			},
+			{
+				"id": "fa380ae5-64af-46d8-9428-5c481f9c7f02",
+				"method": "GET"
+			},
+			{
+				"id": "6f4281c9-7f36-4a17-9911-9e0828161414",
+				"method": "POST"
+			},
+			{
+				"id": "71a931e2-ac62-4925-bedc-736e6f47904d",
+				"method": "POST"
+			},
+			{
+				"id": "a7a2faab-054e-43ad-b0e4-05e47c71526f",
+				"method": "GET"
+			},
+			{
+				"id": "3fdb446b-aadf-4f66-ac0e-aba065faf6e0",
+				"method": "POST"
+			},
+			{
+				"id": "8ffbea7e-3e1c-4097-af1b-d94c755a8408",
+				"method": "POST"
+			},
+			{
+				"id": "d7dc182c-ee5d-4f9a-925d-d22a1d212d66",
+				"method": "DELETE"
+			}
+		]
+	}
+}

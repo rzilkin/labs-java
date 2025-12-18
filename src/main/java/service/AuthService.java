@@ -7,7 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
 public class AuthService {
@@ -26,7 +27,7 @@ public class AuthService {
             logger.warn("Попытка повторной регистрации пользователя {}", username);
             throw new IllegalStateException("User already exists");
         }
-        User user = new User(null, username, hashPassword(username, password));
+        User user = new User(null, username, hashPassword(password));
         return userDao.create(user);
     }
 
@@ -37,7 +38,7 @@ public class AuthService {
         }
         logger.info("Попытка входа пользователя {}", username);
         return userDao.findByUsername(username)
-                .filter(user -> hashPassword(username, password).equals(user.getPasswordHash()))
+                .filter(user -> hashPassword(password).equals(user.getPasswordHash()))
                 .map(user -> {
                     logger.info("Пользователь {} успешно аутентифицирован", username);
                     return user;
@@ -58,8 +59,17 @@ public class AuthService {
         }
     }
 
-    private String hashPassword(String username, String password) {
-        byte[] raw = (username + password).getBytes(StandardCharsets.UTF_8);
-        return Base64.getEncoder().encodeToString(raw);
+    private String hashPassword(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("MD5 algorithm not available", e);
+        }
     }
 }

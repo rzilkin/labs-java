@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 public class DifferentiationServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(DifferentiationServlet.class);
 
-    private final Gson gson = new Gson();
     private final OperationService operationService = ServiceLocator.getInstance().getOperationService();
     private final FunctionService functionService = ServiceLocator.getInstance().getFunctionService();
 

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS math_functions (
     owner_id integer NOT NULL,
     name varchar(255) NOT NULL,
     function_type varchar(16) NOT NULL,
-    definition_body jsonb NOT NULL,
+    definition_body text NOT NULL,
     CONSTRAINT fk_math_functions_owner
         FOREIGN KEY (owner_id) REFERENCES users (id)
         ON DELETE CASCADE,

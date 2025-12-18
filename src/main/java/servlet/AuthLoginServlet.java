@@ -21,7 +21,6 @@ import java.util.Map;
 public class AuthLoginServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(AuthLoginServlet.class);
 
-    private final Gson gson = new Gson();
     private final AuthService authService = ServiceLocator.getInstance().getAuthService();
 
     @Override
@@ -31,14 +30,14 @@ public class AuthLoginServlet extends BaseApiServlet {
 
         Credentials credentials = extractCredentials(req);
         if (credentials == null) {
-            sendUnauthorized(resp, "Credentials are missing or invalid");
+            sendErrorResponse(req, resp, HttpServletResponse.SC_UNAUTHORIZED, "Credentials are missing or invalid");
             return;
         }
 
         User user = authService.login(credentials.username, credentials.password);
         if (user == null) {
             logger.warn("Неуспешная попытка входа пользователя {}", credentials.username);
-            sendUnauthorized(resp, "Invalid username or password");
+            sendErrorResponse(req, resp, HttpServletResponse.SC_UNAUTHORIZED, "Invalid username or password");
             return;
         }
 
@@ -47,8 +46,7 @@ public class AuthLoginServlet extends BaseApiServlet {
         try (PrintWriter writer = resp.getWriter()) {
             writer.write(gson.toJson(Map.of(
                     "id", user.getId(),
-                    "username", user.getUsername()
-            )));
+                    "username", user.getUsername())));
         }
     }
 
@@ -84,13 +82,6 @@ public class AuthLoginServlet extends BaseApiServlet {
         } catch (IllegalArgumentException e) {
             logger.warn("Некорректный заголовок Authorization", e);
             return null;
-        }
-    }
-
-    private void sendUnauthorized(HttpServletResponse resp, String message) throws IOException {
-        resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        try (PrintWriter writer = resp.getWriter()) {
-            writer.write(gson.toJson(Map.of("error", message)));
         }
     }
 

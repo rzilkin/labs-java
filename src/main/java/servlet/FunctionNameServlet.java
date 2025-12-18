@@ -15,11 +15,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
-@WebServlet(name = "FunctionNameServlet", urlPatterns = "/api/v1/functions/*/name")
+@WebServlet(name = "FunctionNameServlet", urlPatterns = "/api/v1/functions/name/*")
 public class FunctionNameServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(FunctionNameServlet.class);
 
-    private final Gson gson = new Gson();
     private final FunctionService functionService = ServiceLocator.getInstance().getFunctionService();
 
     @Override
@@ -65,6 +64,9 @@ public class FunctionNameServlet extends BaseApiServlet {
         } catch (IllegalArgumentException e) {
             logger.warn("Ошибка обновления имени функции {}", id, e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.warn("Функция с таким именем уже существует", e);
+            sendErrorResponse(req, resp, HttpServletResponse.SC_CONFLICT, e.getMessage());
         } catch (Exception e) {
             logger.error("Ошибка сервера при обновлении имени функции {}", id, e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal error");

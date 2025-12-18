@@ -30,7 +30,7 @@ public class JdbcTabulatedDatasetDao implements TabulatedDatasetDao {
     @Override
     public TabulatedDataset create(TabulatedDataset dataset) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {
             statement.setObject(1, dataset.getFunctionId());
             statement.setString(2, dataset.getSourceType());
             try (ResultSet rs = statement.executeQuery()) {
@@ -68,7 +68,7 @@ public class JdbcTabulatedDatasetDao implements TabulatedDatasetDao {
     @Override
     public boolean update(TabulatedDataset dataset) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(UPDATE_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(UPDATE_SQL)) {
             statement.setObject(1, dataset.getFunctionId());
             statement.setString(2, dataset.getSourceType());
             statement.setObject(3, dataset.getId());
@@ -81,7 +81,7 @@ public class JdbcTabulatedDatasetDao implements TabulatedDatasetDao {
     @Override
     public boolean delete(Long id) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(DELETE_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(DELETE_SQL)) {
             statement.setObject(1, id);
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -96,7 +96,7 @@ public class JdbcTabulatedDatasetDao implements TabulatedDatasetDao {
 
     private List<TabulatedDataset> executeListQuery(String sql, Object... parameters) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             for (int i = 0; i < parameters.length; i++) {
                 statement.setObject(i + 1, parameters[i]);
             }
@@ -115,7 +115,14 @@ public class JdbcTabulatedDatasetDao implements TabulatedDatasetDao {
     private TabulatedDataset mapRow(ResultSet rs) throws SQLException {
         TabulatedDataset dataset = new TabulatedDataset();
         dataset.setId(rs.getLong("id"));
-        dataset.setFunctionId((Long) rs.getObject("function_id"));
+        Object functionIdObj = rs.getObject("function_id");
+        if (functionIdObj instanceof Integer) {
+            dataset.setFunctionId(((Integer) functionIdObj).longValue());
+        } else if (functionIdObj instanceof Long) {
+            dataset.setFunctionId((Long) functionIdObj);
+        } else if (functionIdObj != null) {
+            dataset.setFunctionId(Long.valueOf(functionIdObj.toString()));
+        }
         dataset.setSourceType(rs.getString("source_type"));
         return dataset;
     }

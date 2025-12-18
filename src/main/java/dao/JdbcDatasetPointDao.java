@@ -29,7 +29,7 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
     @Override
     public void upsert(DatasetPoint point) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(UPSERT_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(UPSERT_SQL)) {
             statement.setObject(1, point.getDatasetId());
             statement.setObject(2, point.getPointIndex());
             if (point.getXValue() != null) {
@@ -66,7 +66,7 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
     @Override
     public boolean deletePoint(Long datasetId, int pointIndex) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(DELETE_POINT_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(DELETE_POINT_SQL)) {
             statement.setObject(1, datasetId);
             statement.setInt(2, pointIndex);
             return statement.executeUpdate() > 0;
@@ -78,7 +78,7 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
     @Override
     public int deleteAllByDataset(Long datasetId) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(DELETE_ALL_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(DELETE_ALL_SQL)) {
             statement.setObject(1, datasetId);
             return statement.executeUpdate();
         } catch (SQLException e) {
@@ -89,7 +89,7 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
     @Override
     public long countByDataset(Long datasetId) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(COUNT_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(COUNT_SQL)) {
             statement.setObject(1, datasetId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -104,7 +104,14 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
 
     private DatasetPoint mapRow(ResultSet rs) throws SQLException {
         DatasetPoint point = new DatasetPoint();
-        point.setDatasetId((Long) rs.getObject("dataset_id"));
+        Object datasetIdObj = rs.getObject("dataset_id");
+        if (datasetIdObj instanceof Integer) {
+            point.setDatasetId(((Integer) datasetIdObj).longValue());
+        } else if (datasetIdObj instanceof Long) {
+            point.setDatasetId((Long) datasetIdObj);
+        } else if (datasetIdObj != null) {
+            point.setDatasetId(Long.valueOf(datasetIdObj.toString()));
+        }
         point.setPointIndex(rs.getInt("point_index"));
         point.setXValue(rs.getBigDecimal("x_value"));
         point.setYValue(rs.getBigDecimal("y_value"));
@@ -113,7 +120,7 @@ public class JdbcDatasetPointDao implements DatasetPointDao {
 
     private List<DatasetPoint> executeDatasetQuery(String sql, Long datasetId) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setObject(1, datasetId);
             try (ResultSet rs = statement.executeQuery()) {
                 List<DatasetPoint> result = new ArrayList<>();

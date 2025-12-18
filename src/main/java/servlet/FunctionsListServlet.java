@@ -19,7 +19,6 @@ import java.util.List;
 public class FunctionsListServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(FunctionsListServlet.class);
 
-    private final Gson gson = new Gson();
     private final FunctionService functionService = ServiceLocator.getInstance().getFunctionService();
 
     @Override
@@ -36,21 +35,35 @@ public class FunctionsListServlet extends BaseApiServlet {
 
         String type = req.getParameter("type");
         String search = req.getParameter("search");
+        Integer page = parseIntParam(req.getParameter("page"), 0);
+        Integer size = parseIntParam(req.getParameter("size"), 20);
 
         try {
-            List<FunctionSummaryDto> functions = functionService.findAllByOwner(userId, type, search);
+            List<FunctionSummaryDto> functions = functionService.findAllByOwner(userId, type, search, page, size);
             resp.setStatus(HttpServletResponse.SC_OK);
             try (PrintWriter writer = resp.getWriter()) {
                 writer.write(gson.toJson(functions));
             }
-            logger.info("Получен список из {} функций пользователя {} за {} мс", functions.size(), userId,
-                    System.currentTimeMillis() - start);
+            logger.info("Получен список из {} функций пользователя {} (page={}, size={}) за {} мс",
+                    functions.size(), userId, page, size, System.currentTimeMillis() - start);
         } catch (IllegalArgumentException e) {
             logger.warn("Ошибка в запросе списка функций", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            logger.error("Сбой при получении списка функций", e);
-            sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal error");
+            logger.error("Сбой при получении списка функций: {}", e.getMessage(), e);
+            String errorMsg = "Internal error: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+            sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, errorMsg);
+        }
+    }
+
+    private Integer parseIntParam(String value, int defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
         }
     }
 }

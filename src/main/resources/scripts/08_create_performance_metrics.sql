@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS performance_metrics (
     operation varchar(255) NOT NULL,
     records_processed integer NOT NULL,
     elapsed_ms integer NOT NULL,
+    recorded_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_engine
         CHECK (engine IN ('MANUAL_JDBC', 'FRAMEWORK_ORM')),
     CONSTRAINT chk_records_processed_non_negative

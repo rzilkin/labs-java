@@ -15,12 +15,13 @@ import service.ServiceLocator;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 @WebServlet(name = "BinaryOperationServlet", urlPatterns = "/api/v1/operations/*")
 public class BinaryOperationServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(BinaryOperationServlet.class);
+    private static final Set<String> ALLOWED_OPERATIONS = Set.of("add", "subtract", "multiply", "divide");
 
-    private final Gson gson = new Gson();
     private final OperationService operationService = ServiceLocator.getInstance().getOperationService();
     private final FunctionService functionService = ServiceLocator.getInstance().getFunctionService();
 
@@ -37,8 +38,15 @@ public class BinaryOperationServlet extends BaseApiServlet {
         }
 
         String op = extractOperation(req.getPathInfo());
-        if (op == null) {
+        if (op == null || op.isBlank()) {
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "Operation is required");
+            return;
+        }
+
+        String normalizedOp = op.toLowerCase();
+        if (!ALLOWED_OPERATIONS.contains(normalizedOp)) {
+            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST,
+                    "Invalid operation. Allowed: add, subtract, multiply, divide");
             return;
         }
 
@@ -57,19 +65,19 @@ public class BinaryOperationServlet extends BaseApiServlet {
         }
 
         try {
-            var created = operationService.applyBinaryOperation(body.leftId, body.rightId, op, userId);
+            var created = operationService.applyBinaryOperation(body.leftId, body.rightId, normalizedOp, userId);
             FunctionFullDto dto = functionService.findByIdAndOwner(created.getId(), userId);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             try (PrintWriter writer = resp.getWriter()) {
                 writer.write(gson.toJson(dto));
             }
-            logger.info("Выполнена операция {} пользователем {} за {} мс", op, userId,
+            logger.info("Выполнена операция {} пользователем {} за {} мс", normalizedOp, userId,
                     System.currentTimeMillis() - start);
         } catch (IllegalArgumentException e) {
-            logger.warn("Ошибка валидации бинарной операции {}", op, e);
+            logger.warn("Ошибка валидации бинарной операции {}", normalizedOp, e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            logger.error("Внутренняя ошибка бинарной операции {}", op, e);
+            logger.error("Внутренняя ошибка бинарной операции {}", normalizedOp, e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal error");
         }
     }

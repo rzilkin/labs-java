@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 public class AnalyticFunctionCreateServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(AnalyticFunctionCreateServlet.class);
 
-    private final Gson gson = new Gson();
     private final FunctionService functionService = ServiceLocator.getInstance().getFunctionService();
 
     @Override
@@ -56,10 +55,13 @@ public class AnalyticFunctionCreateServlet extends BaseApiServlet {
                 writer.write(gson.toJson(created));
             }
             logger.info("Создана аналитическая функция {} пользователем {} за {} мс",
-                    created.getSummary().getId(), userId, System.currentTimeMillis() - start);
+                    created.getId(), userId, System.currentTimeMillis() - start);
         } catch (IllegalArgumentException e) {
             logger.warn("Ошибка валидации при создании аналитической функции", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.warn("Функция с таким именем уже существует", e);
+            sendErrorResponse(req, resp, HttpServletResponse.SC_CONFLICT, e.getMessage());
         } catch (Exception e) {
             logger.error("Внутренняя ошибка при создании аналитической функции", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal error");

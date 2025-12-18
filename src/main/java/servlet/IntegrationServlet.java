@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 public class IntegrationServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(IntegrationServlet.class);
 
-    private final Gson gson = new Gson();
     private final OperationService operationService = ServiceLocator.getInstance().getOperationService();
 
     @Override
@@ -79,10 +78,10 @@ public class IntegrationServlet extends BaseApiServlet {
     }
 
     private static class IntegrationResponse {
-        final double result;
+        final double value;
 
-        IntegrationResponse(double result) {
-            this.result = result;
+        IntegrationResponse(double value) {
+            this.value = value;
         }
     }
 }

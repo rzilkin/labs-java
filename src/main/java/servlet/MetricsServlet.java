@@ -20,7 +20,6 @@ import java.util.List;
 public class MetricsServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(MetricsServlet.class);
 
-    private final Gson gson = new Gson();
     private final MetricsService metricsService = ServiceLocator.getInstance().getMetricsService();
 
     @Override
@@ -55,9 +54,20 @@ public class MetricsServlet extends BaseApiServlet {
             return;
         }
 
-        if (body == null || body.getOperation() == null || body.getEngine() == null) {
-            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "engine and operation are required");
+        if (body == null || body.getOperation() == null) {
+            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "operation is required");
             return;
+        }
+
+        if (body.getEngine() == null || body.getEngine().isBlank()) {
+            body.setEngine("MANUAL_JDBC");
+        }
+
+        if (body.getRecordsProcessed() == null) {
+            body.setRecordsProcessed(0);
+        }
+        if (body.getElapsedMs() == null) {
+            body.setElapsedMs(0);
         }
 
         try {
@@ -68,8 +78,9 @@ public class MetricsServlet extends BaseApiServlet {
             }
             logger.info("Сохранена метрика {}", saved.getId());
         } catch (Exception e) {
-            logger.error("Ошибка сохранения метрики", e);
-            sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal error");
+            logger.error("Ошибка сохранения метрики: {}", e.getMessage(), e);
+            String errorMsg = "Internal error: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+            sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, errorMsg);
         }
     }
 }

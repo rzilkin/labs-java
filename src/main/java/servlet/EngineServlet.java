@@ -1,7 +1,5 @@
 package servlet;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -10,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import service.OperationService;
 import service.ServiceLocator;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -18,47 +17,46 @@ import java.nio.charset.StandardCharsets;
 public class EngineServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(EngineServlet.class);
 
-    private final Gson gson = new Gson();
     private final OperationService operationService = ServiceLocator.getInstance().getOperationService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
+        resp.setContentType("text/plain");
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        String engine = operationService.getEngine();
+        String engine = mapEngineToSpec(operationService.getEngine());
         resp.setStatus(HttpServletResponse.SC_OK);
         try (PrintWriter writer = resp.getWriter()) {
-            writer.write("{\"engine\":\"" + engine + "\"}");
+            writer.write(engine);
         }
         logger.info("Текущий движок табулирования: {}", engine);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
+        resp.setContentType("text/plain");
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
-        EngineRequest body;
-        try {
-            body = gson.fromJson(req.getReader(), EngineRequest.class);
-        } catch (JsonSyntaxException e) {
-            logger.warn("Некорректный JSON движка", e);
-            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid JSON");
-            return;
-        }
-
-        if (body == null || body.engine == null || body.engine.isBlank()) {
+        String body = readBody(req);
+        if (body == null || body.isBlank()) {
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "engine is required");
             return;
         }
 
+        String engine = body.trim().toLowerCase();
+        if (!engine.equals("manual") && !engine.equals("framework")) {
+            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "engine must be 'manual' or 'framework'");
+            return;
+        }
+
         try {
-            operationService.setEngine(body.engine);
+            String internalEngine = mapSpecToInternal(engine);
+            operationService.setEngine(internalEngine);
+            String currentEngine = mapEngineToSpec(operationService.getEngine());
             resp.setStatus(HttpServletResponse.SC_OK);
             try (PrintWriter writer = resp.getWriter()) {
-                writer.write("{\"engine\":\"" + operationService.getEngine() + "\"}");
+                writer.write(currentEngine);
             }
-            logger.info("Обновлён движок табулирования на {}", body.engine);
+            logger.info("Обновлён движок табулирования на {}", currentEngine);
         } catch (IllegalArgumentException e) {
             logger.warn("Ошибка обновления движка", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
@@ -68,7 +66,35 @@ public class EngineServlet extends BaseApiServlet {
         }
     }
 
-    private static class EngineRequest {
-        String engine;
+    private String readBody(HttpServletRequest req) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = req.getReader()) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        }
+        return sb.toString();
+    }
+
+    private String mapEngineToSpec(String internalEngine) {
+        if (internalEngine == null) {
+            return "manual";
+        }
+        if (internalEngine.toLowerCase().contains("array")) {
+            return "manual";
+        } else if (internalEngine.toLowerCase().contains("linked")) {
+            return "framework";
+        }
+        return "manual";
+    }
+
+    private String mapSpecToInternal(String specEngine) {
+        if ("manual".equalsIgnoreCase(specEngine)) {
+            return "array";
+        } else if ("framework".equalsIgnoreCase(specEngine)) {
+            return "linked";
+        }
+        return "array";
     }
 }

@@ -31,9 +31,9 @@ public class OperationService {
     private final TabulatedDifferentialOperator differentialOperator;
 
     public OperationService(MathFunctionDao mathFunctionDao,
-                            TabulatedDatasetDao tabulatedDatasetDao,
-                            DatasetPointDao datasetPointDao,
-                            TabulatedFunctionOperationService tabulatedFunctionOperationService) {
+            TabulatedDatasetDao tabulatedDatasetDao,
+            DatasetPointDao datasetPointDao,
+            TabulatedFunctionOperationService tabulatedFunctionOperationService) {
         this.mathFunctionDao = Objects.requireNonNull(mathFunctionDao, "mathFunctionDao");
         this.tabulatedDatasetDao = Objects.requireNonNull(tabulatedDatasetDao, "tabulatedDatasetDao");
         this.datasetPointDao = Objects.requireNonNull(datasetPointDao, "datasetPointDao");
@@ -47,8 +47,18 @@ public class OperationService {
         validateOwner(ownerId);
         MathFunction left = loadOwnedFunction(leftId, ownerId);
         MathFunction right = loadOwnedFunction(rightId, ownerId);
-        TabulatedFunction leftFunc = loadTabulatedFunction(left);
-        TabulatedFunction rightFunc = loadTabulatedFunction(right);
+        TabulatedFunction leftFunc;
+        TabulatedFunction rightFunc;
+        try {
+            leftFunc = loadTabulatedFunction(left);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Left function (ID " + leftId + "): " + e.getMessage(), e);
+        }
+        try {
+            rightFunc = loadTabulatedFunction(right);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Right function (ID " + rightId + "): " + e.getMessage(), e);
+        }
 
         TabulatedFunction result;
         switch (normalizeOp(op)) {
@@ -139,7 +149,8 @@ public class OperationService {
         created.setOwnerId(ownerId);
         created.setName(name);
         created.setFunctionType("TABULATED");
-        created.setDefinitionBody(definitionBody);
+        String jsonBody = "{\"sourceType\":\"" + definitionBody + "\"}";
+        created.setDefinitionBody(jsonBody);
         MathFunction saved = mathFunctionDao.create(created);
 
         TabulatedDataset dataset = new TabulatedDataset();
@@ -157,7 +168,7 @@ public class OperationService {
             datasetPointDao.upsert(point);
         }
         logger.info("Сохранён результат операции {} с {} точками", definitionBody, idx);
-        saved.setDefinitionBody(definitionBody);
+        // Definition body is already set correctly, no need to update
         return saved;
     }
 
@@ -166,8 +177,8 @@ public class OperationService {
             throw new IllegalArgumentException("function id is required");
         }
         Optional<MathFunction> functionOpt = mathFunctionDao.findById(id);
-        MathFunction function = functionOpt.orElseThrow(() ->
-                new IllegalArgumentException("Function not found: " + id));
+        MathFunction function = functionOpt
+                .orElseThrow(() -> new IllegalArgumentException("Function not found: " + id));
         if (!Objects.equals(function.getOwnerId(), ownerId)) {
             throw new IllegalArgumentException("Access denied for function: " + id);
         }
@@ -176,7 +187,10 @@ public class OperationService {
 
     private TabulatedFunction loadTabulatedFunction(MathFunction function) {
         if (!"TABULATED".equalsIgnoreCase(function.getFunctionType())) {
-            throw new IllegalArgumentException("Function is not tabulated");
+            throw new IllegalArgumentException(
+                    String.format("Function %d is of type '%s', but tabulated function is required. "
+                            + "Please use a tabulated function or convert the function to tabulated format first.",
+                            function.getId(), function.getFunctionType()));
         }
         List<TabulatedDataset> datasets = tabulatedDatasetDao.findByFunctionId(function.getId());
         if (datasets.isEmpty()) {

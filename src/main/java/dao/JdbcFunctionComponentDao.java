@@ -11,12 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JdbcFunctionComponentDao implements FunctionComponentDao {
-    private static final String BASE_SELECT_SQL =
-            "SELECT composite_id, component_id, position FROM function_components";
+    private static final String BASE_SELECT_SQL = "SELECT composite_id, component_id, position FROM function_components";
     private static final String SELECT_BY_COMPOSITE = BASE_SELECT_SQL + " WHERE composite_id = ?";
     private static final String SELECT_BY_COMPOSITE_ORDER = SELECT_BY_COMPOSITE + " ORDER BY position";
-    private static final String SELECT_COMPOSITE_IDS_BY_COMPONENT =
-            "SELECT DISTINCT composite_id FROM function_components WHERE component_id = ? ORDER BY composite_id";
+    private static final String SELECT_COMPOSITE_IDS_BY_COMPONENT = "SELECT DISTINCT composite_id FROM function_components WHERE component_id = ? ORDER BY composite_id";
 
     private final DatabaseConnectionManager connectionManager;
 
@@ -37,7 +35,7 @@ public class JdbcFunctionComponentDao implements FunctionComponentDao {
     @Override
     public List<Long> findCompositeIdsByComponentId(Long componentId) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(SELECT_COMPOSITE_IDS_BY_COMPONENT)) {
+                PreparedStatement statement = connection.prepareStatement(SELECT_COMPOSITE_IDS_BY_COMPONENT)) {
             statement.setObject(1, componentId);
             try (ResultSet rs = statement.executeQuery()) {
                 List<Long> compositeIds = new ArrayList<>();
@@ -53,7 +51,7 @@ public class JdbcFunctionComponentDao implements FunctionComponentDao {
 
     private List<FunctionComponents> executeComponentQuery(String sql, Long id) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setObject(1, id);
             try (ResultSet rs = statement.executeQuery()) {
                 List<FunctionComponents> components = new ArrayList<>();
@@ -69,8 +67,22 @@ public class JdbcFunctionComponentDao implements FunctionComponentDao {
 
     private FunctionComponents mapRow(ResultSet rs) throws SQLException {
         FunctionComponents component = new FunctionComponents();
-        component.setCompositeId((Long) rs.getObject("composite_id"));
-        component.setComponentId((Long) rs.getObject("component_id"));
+        Object compositeIdObj = rs.getObject("composite_id");
+        if (compositeIdObj instanceof Integer) {
+            component.setCompositeId(((Integer) compositeIdObj).longValue());
+        } else if (compositeIdObj instanceof Long) {
+            component.setCompositeId((Long) compositeIdObj);
+        } else if (compositeIdObj != null) {
+            component.setCompositeId(Long.valueOf(compositeIdObj.toString()));
+        }
+        Object componentIdObj = rs.getObject("component_id");
+        if (componentIdObj instanceof Integer) {
+            component.setComponentId(((Integer) componentIdObj).longValue());
+        } else if (componentIdObj instanceof Long) {
+            component.setComponentId((Long) componentIdObj);
+        } else if (componentIdObj != null) {
+            component.setComponentId(Long.valueOf(componentIdObj.toString()));
+        }
         component.setPosition((Short) rs.getObject("position"));
         return component;
     }

@@ -1,0 +1,1651 @@
+{
+	"info": {
+		"_postman_id": "mathproject-api-collection",
+		"name": "MathProject API - Complete Collection",
+		"description": "Complete API collection for MathProject with all endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201 or 409', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test('Response has id and username', function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('id');",
+									"        pm.expect(jsonData).to.have.property('username');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser123\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login (Basic Auth)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has id and username', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('username');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Functions - Create",
+			"item": [
+				{
+					"name": "Create Analytic Function",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    try {",
+									"        const responseText = pm.response.text();",
+									"        console.log('Response text:', responseText);",
+									"        const response = pm.response.json();",
+									"        console.log('Parsed response:', JSON.stringify(response));",
+									"        ",
+									"        // Try to save variable regardless of test result",
+									"        if (response && typeof response === 'object') {",
+									"            if (response.id !== undefined && response.id !== null) {",
+									"                const idStr = String(response.id);",
+									"                pm.collectionVariables.set('function_id_1', idStr);",
+									"                console.log('✅ Saved function_id_1 =', idStr);",
+									"                pm.test('Variable saved successfully', function () {",
+									"                    const saved = pm.collectionVariables.get('function_id_1');",
+									"                    pm.expect(saved).to.equal(idStr);",
+									"                });",
+									"            } else {",
+									"                console.log('❌ No ID in response object:', response);",
+									"            }",
+									"        } else {",
+									"            console.log('❌ Response is not an object:', typeof response, response);",
+									"        }",
+									"        ",
+									"        // Test that response has id",
+									"        pm.test('Response has id property', function () {",
+									"            pm.expect(response).to.have.property('id');",
+									"        });",
+									"    } catch (e) {",
+									"        console.log('❌ Error parsing response:', e.message);",
+									"        console.log('Response text:', pm.response.text());",
+									"        console.log('Stack:', e.stack);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"sine_function\",\n  \"expression\": \"Math.sin(x)\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/analytic",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"analytic"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Another Analytic Function",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    try {",
+									"        const responseText = pm.response.text();",
+									"        console.log('Response text:', responseText);",
+									"        const response = pm.response.json();",
+									"        console.log('Parsed response:', JSON.stringify(response));",
+									"        ",
+									"        // Try to save variable regardless of test result",
+									"        if (response && typeof response === 'object') {",
+									"            if (response.id !== undefined && response.id !== null) {",
+									"                const idStr = String(response.id);",
+									"                pm.collectionVariables.set('function_id_2', idStr);",
+									"                console.log('✅ Saved function_id_2 =', idStr);",
+									"                pm.test('Variable saved successfully', function () {",
+									"                    const saved = pm.collectionVariables.get('function_id_2');",
+									"                    pm.expect(saved).to.equal(idStr);",
+									"                });",
+									"            } else {",
+									"                console.log('❌ No ID in response object:', response);",
+									"            }",
+									"        } else {",
+									"            console.log('❌ Response is not an object:', typeof response, response);",
+									"        }",
+									"        ",
+									"        // Test that response has id",
+									"        pm.test('Response has id property', function () {",
+									"            pm.expect(response).to.have.property('id');",
+									"        });",
+									"    } catch (e) {",
+									"        console.log('❌ Error parsing response:', e.message);",
+									"        console.log('Response text:', pm.response.text());",
+									"        console.log('Stack:', e.stack);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"cosine_function\",\n  \"expression\": \"Math.cos(x)\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/analytic",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"analytic"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Tabulated Function (Manual)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    try {",
+									"        const responseText = pm.response.text();",
+									"        console.log('Response text:', responseText);",
+									"        const response = pm.response.json();",
+									"        console.log('Parsed response:', JSON.stringify(response));",
+									"        ",
+									"        // Try to save variable regardless of test result",
+									"        if (response && typeof response === 'object') {",
+									"            if (response.id !== undefined && response.id !== null) {",
+									"                const idStr = String(response.id);",
+									"                pm.collectionVariables.set('function_id_3', idStr);",
+									"                console.log('✅ Saved function_id_3 =', idStr);",
+									"                pm.test('Variable saved successfully', function () {",
+									"                    const saved = pm.collectionVariables.get('function_id_3');",
+									"                    pm.expect(saved).to.equal(idStr);",
+									"                });",
+									"            } else {",
+									"                console.log('❌ No ID in response object:', response);",
+									"            }",
+									"        } else {",
+									"            console.log('❌ Response is not an object:', typeof response, response);",
+									"        }",
+									"        ",
+									"        // Test that response has id",
+									"        pm.test('Response has id property', function () {",
+									"            pm.expect(response).to.have.property('id');",
+									"        });",
+									"    } catch (e) {",
+									"        console.log('❌ Error parsing response:', e.message);",
+									"        console.log('Response text:', pm.response.text());",
+									"        console.log('Stack:', e.stack);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"quadratic_function\",\n  \"points\": [\n    { \"x\": 0.0, \"y\": 0.0 },\n    { \"x\": 1.0, \"y\": 1.0 },\n    { \"x\": 2.0, \"y\": 4.0 },\n    { \"x\": 3.0, \"y\": 9.0 },\n    { \"x\": 4.0, \"y\": 16.0 }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/tabulated/manual",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"tabulated",
+								"manual"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Tabulated Function (From Function)",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"sine_tabulated\",\n  \"sourceFunctionId\": {{function_id_1}},\n  \"count\": 10,\n  \"from\": 0.0,\n  \"to\": 6.28\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/tabulated/from-function",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"tabulated",
+								"from-function"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Composite Function",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    try {",
+									"        const responseText = pm.response.text();",
+									"        console.log('Response text:', responseText);",
+									"        const response = pm.response.json();",
+									"        console.log('Parsed response:', JSON.stringify(response));",
+									"        ",
+									"        // Try to save variable regardless of test result",
+									"        if (response && typeof response === 'object') {",
+									"            if (response.id !== undefined && response.id !== null) {",
+									"                const idStr = String(response.id);",
+									"                pm.collectionVariables.set('composite_id', idStr);",
+									"                console.log('✅ Saved composite_id =', idStr);",
+									"                pm.test('Variable saved successfully', function () {",
+									"                    const saved = pm.collectionVariables.get('composite_id');",
+									"                    pm.expect(saved).to.equal(idStr);",
+									"                });",
+									"            } else {",
+									"                console.log('❌ No ID in response object:', response);",
+									"            }",
+									"        } else {",
+									"            console.log('❌ Response is not an object:', typeof response, response);",
+									"        }",
+									"        ",
+									"        // Test that response has id",
+									"        pm.test('Response has id property', function () {",
+									"            pm.expect(response).to.have.property('id');",
+									"        });",
+									"    } catch (e) {",
+									"        console.log('❌ Error parsing response:', e.message);",
+									"        console.log('Response text:', pm.response.text());",
+									"        console.log('Stack:', e.stack);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"sin_cos_composite\",\n  \"componentIds\": [{{function_id_1}}, {{function_id_2}}]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/composite",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"composite"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Functions - List & Get",
+			"item": [
+				{
+					"name": "Get All Functions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code !== 200) {",
+									"    console.log('❌ Error response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/functions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Functions with Filters",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code !== 200) {",
+									"    console.log('❌ Error response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/functions?type=ANALYTIC&search=sin&page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "ANALYTIC"
+								},
+								{
+									"key": "search",
+									"value": "sin"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Function by ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const funcId = pm.collectionVariables.get('function_id_1');",
+									"if (!funcId || funcId === '') {",
+									"    console.log('⚠️ Warning: function_id_1 is not set. Make sure to run Create Analytic Function first.');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test('Response has id', function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('id');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/functions/{{function_id_1}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"{{function_id_1}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Functions - Update",
+			"item": [
+				{
+					"name": "Update Function Name",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"updated_sine_function\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/{{function_id_1}}/name",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"{{function_id_1}}",
+								"name"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Analytic Function Expression",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"expression\": \"Math.sin(x) * 2\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/analytic/{{function_id_1}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"analytic",
+								"{{function_id_1}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Functions - Components",
+			"item": [
+				{
+					"name": "Get Components",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/functions/{{composite_id}}/components",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"{{composite_id}}",
+								"components"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Component",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"componentId\": {{function_id_3}},\n  \"position\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/{{composite_id}}/components",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"{{composite_id}}",
+								"components"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Component",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"componentId\": {{function_id_3}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/{{composite_id}}/components",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"{{composite_id}}",
+								"components"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Operations",
+			"item": [
+				{
+					"name": "Binary Operation - Subtract",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leftId\": {{function_id_1}},\n  \"rightId\": {{function_id_2}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/operations/subtract",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"operations",
+								"subtract"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Binary Operation - Add",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leftId\": {{function_id_1}},\n  \"rightId\": {{function_id_2}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/operations/add",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"operations",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Binary Operation - Multiply",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leftId\": {{function_id_1}},\n  \"rightId\": {{function_id_2}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/operations/multiply",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"operations",
+								"multiply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Binary Operation - Divide",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leftId\": {{function_id_1}},\n  \"rightId\": {{function_id_2}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/operations/divide",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"operations",
+								"divide"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Differentiate Function",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/operations/differentiate/{{function_id_1}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"operations",
+								"differentiate",
+								"{{function_id_1}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Integrate Function",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"threads\": 8\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/operations/integrate/{{function_id_1}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"operations",
+								"integrate",
+								"{{function_id_1}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Functions - Import/Export",
+			"item": [
+				{
+					"name": "Export Function",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/functions/{{function_id_1}}/export",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"{{function_id_1}}",
+								"export"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import Analytic Function",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"imported_sine\",\n  \"type\": \"ANALYTIC\",\n  \"analyticExpression\": \"Math.sin(x)\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/import",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"import"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import Tabulated Function",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"imported_tabulated\",\n  \"type\": \"TABULATED\",\n  \"points\": [\n    { \"x\": 0.0, \"y\": 0.0 },\n    { \"x\": 1.0, \"y\": 1.0 },\n    { \"x\": 2.0, \"y\": 4.0 }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/import",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"import"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import Composite Function",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"imported_composite\",\n  \"type\": \"COMPOSITE\",\n  \"components\": [{{function_id_1}}, {{function_id_2}}]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/functions/import",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"import"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Metrics",
+			"item": [
+				{
+					"name": "Get All Metrics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code !== 200) {",
+									"    console.log('❌ Error response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/metrics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"metrics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Save Metric",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code !== 201) {",
+									"    console.log('❌ Error response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"operation\": \"create_function\",\n  \"recordsProcessed\": 100,\n  \"elapsedMs\": 45\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/metrics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"metrics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Save Metric with Engine",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code !== 201) {",
+									"    console.log('❌ Error response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"operation\": \"differentiate\",\n  \"recordsProcessed\": 50,\n  \"elapsedMs\": 120,\n  \"engine\": \"MANUAL_JDBC\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/metrics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"metrics"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Engine",
+			"item": [
+				{
+					"name": "Get Current Engine",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/engine",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"engine"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Switch Engine to Manual",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/plain"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "manual"
+						},
+						"url": {
+							"raw": "{{base_url}}/engine",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"engine"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Switch Engine to Framework",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/plain"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "framework"
+						},
+						"url": {
+							"raw": "{{base_url}}/engine",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"engine"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Functions - Delete",
+			"item": [
+				{
+					"name": "Delete Function",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{username}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{password}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/functions/{{function_id_1}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"functions",
+								"{{function_id_1}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Log collection variables for debugging",
+					"const funcId1 = pm.collectionVariables.get('function_id_1');",
+					"const funcId2 = pm.collectionVariables.get('function_id_2');",
+					"const funcId3 = pm.collectionVariables.get('function_id_3');",
+					"const compositeId = pm.collectionVariables.get('composite_id');",
+					"const requestName = pm.info.requestName || 'Unknown';",
+					"console.log(`[${requestName}] Collection variables:`, {",
+					"    function_id_1: funcId1 || '(empty)',",
+					"    function_id_2: funcId2 || '(empty)',",
+					"    function_id_3: funcId3 || '(empty)',",
+					"    composite_id: compositeId || '(empty)'",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/mathproj-labs/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "testuser123",
+			"type": "string"
+		},
+		{
+			"key": "password",
+			"value": "password123",
+			"type": "string"
+		},
+		{
+			"key": "function_id_1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "function_id_2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "function_id_3",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "composite_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

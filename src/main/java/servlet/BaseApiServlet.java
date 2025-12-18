@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import service.AuthHelper;
+import util.GsonFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -16,9 +17,10 @@ import dto.ErrorResponse;
 
 public abstract class BaseApiServlet extends HttpServlet {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Gson gson = new Gson();
+    protected final Gson gson = GsonFactory.getInstance();
 
-    protected void sendNotImplemented(HttpServletRequest req, HttpServletResponse resp, String endpoint) throws IOException {
+    protected void sendNotImplemented(HttpServletRequest req, HttpServletResponse resp, String endpoint)
+            throws IOException {
         logger.info("Запрос к не реализованному эндпоинту {} {}", req.getMethod(), endpoint);
         resp.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
         resp.setContentType("application/json");
@@ -28,7 +30,8 @@ public abstract class BaseApiServlet extends HttpServlet {
         }
     }
 
-    protected void sendErrorResponse(HttpServletRequest req, HttpServletResponse resp, int status, String message) throws IOException {
+    protected void sendErrorResponse(HttpServletRequest req, HttpServletResponse resp, int status, String message)
+            throws IOException {
         resp.setStatus(status);
         resp.setContentType("application/json");
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
@@ -37,8 +40,7 @@ public abstract class BaseApiServlet extends HttpServlet {
                 status,
                 HttpServletResponseErrorMapper.fromStatus(status),
                 message,
-                req.getRequestURI()
-        );
+                req.getRequestURI());
         try (PrintWriter writer = resp.getWriter()) {
             writer.write(gson.toJson(body));
         }

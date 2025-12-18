@@ -1,5 +1,6 @@
 package dto;
 
+import java.time.Instant;
 import java.util.Objects;
 
 public class PerformanceMetrics {
@@ -8,6 +9,7 @@ public class PerformanceMetrics {
     private String operation;
     private Integer recordsProcessed;
     private Integer elapsedMs;
+    private Instant recordedAt;
 
     public PerformanceMetrics() {}
 
@@ -17,6 +19,16 @@ public class PerformanceMetrics {
         this.operation = operation;
         this.recordsProcessed = recordsProcessed;
         this.elapsedMs = elapsedMs;
+        this.recordedAt = Instant.now();
+    }
+
+    public PerformanceMetrics(Long id, String engine, String operation, Integer recordsProcessed, Integer elapsedMs, Instant recordedAt) {
+        this.id = id;
+        this.engine = engine;
+        this.operation = operation;
+        this.recordsProcessed = recordsProcessed;
+        this.elapsedMs = elapsedMs;
+        this.recordedAt = recordedAt;
     }
 
     public Long getId() {
@@ -49,6 +61,12 @@ public class PerformanceMetrics {
     public void setElapsedMs(Integer elapsedMs) {
         this.elapsedMs = elapsedMs;
     }
+    public Instant getRecordedAt() {
+        return recordedAt;
+    }
+    public void setRecordedAt(Instant recordedAt) {
+        this.recordedAt = recordedAt;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -59,17 +77,19 @@ public class PerformanceMetrics {
                 Objects.equals(engine, that.engine) &&
                 Objects.equals(operation, that.operation) &&
                 Objects.equals(recordsProcessed, that.recordsProcessed) &&
-                Objects.equals(elapsedMs, that.elapsedMs);
+                Objects.equals(elapsedMs, that.elapsedMs) &&
+                Objects.equals(recordedAt, that.recordedAt);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, engine, operation, recordsProcessed, elapsedMs);
+        return Objects.hash(id, engine, operation, recordsProcessed, elapsedMs, recordedAt);
     }
 
     @Override
     public String toString() {
-        return "Проверка мощности{id = " + id + ", движок = '" + engine + "', операция = '" + operation +
-                "', количество обработанных запросов = " + recordsProcessed + ", время = " + elapsedMs + '}';
+        return "PerformanceMetrics{id=" + id + ", engine='" + engine + "', operation='" + operation +
+                "', recordsProcessed=" + recordsProcessed + ", elapsedMs=" + elapsedMs +
+                ", recordedAt=" + recordedAt + '}';
     }
 }

@@ -21,7 +21,6 @@ import java.util.List;
 public class TabulatedManualCreateServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(TabulatedManualCreateServlet.class);
 
-    private final Gson gson = new Gson();
     private final FunctionService functionService = ServiceLocator.getInstance().getFunctionService();
 
     @Override
@@ -47,7 +46,8 @@ public class TabulatedManualCreateServlet extends BaseApiServlet {
 
         if (body == null || isBlank(body.name) || body.points == null || body.points.size() < 2) {
             logger.warn("Ошибочные данные для табулированной функции: {}", body);
-            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "name and at least two points are required");
+            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST,
+                    "name and at least two points are required");
             return;
         }
 
@@ -57,11 +57,14 @@ public class TabulatedManualCreateServlet extends BaseApiServlet {
             try (PrintWriter writer = resp.getWriter()) {
                 writer.write(gson.toJson(created));
             }
-            logger.info("Создана табулированная функция {} пользователем {} за {} мс", created.getSummary().getId(),
+            logger.info("Создана табулированная функция {} пользователем {} за {} мс", created.getId(),
                     userId, System.currentTimeMillis() - start);
         } catch (IllegalArgumentException e) {
             logger.warn("Ошибка валидации табулированной функции", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.warn("Функция с таким именем уже существует", e);
+            sendErrorResponse(req, resp, HttpServletResponse.SC_CONFLICT, e.getMessage());
         } catch (Exception e) {
             logger.error("Ошибка сервера при создании табулированной функции", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal error");

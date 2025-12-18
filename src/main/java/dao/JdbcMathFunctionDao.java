@@ -12,12 +12,11 @@ import java.util.List;
 import java.util.Optional;
 
 public class JdbcMathFunctionDao implements MathFunctionDao {
-    private static final String INSERT_SQL =
-            "INSERT INTO math_functions (owner_id, name, function_type, definition_body) " +
-                    "VALUES (?, ?, ?, ?::jsonb) RETURNING id";
+    private static final String INSERT_SQL = "INSERT INTO math_functions (owner_id, name, function_type, definition_body) "
+            +
+            "VALUES (?, ?, ?, CAST(? AS jsonb)) RETURNING id";
 
-    private static final String BASE_SELECT_SQL =
-            "SELECT id, owner_id, name, function_type, definition_body FROM math_functions";
+    private static final String BASE_SELECT_SQL = "SELECT id, owner_id, name, function_type, definition_body::text as definition_body FROM math_functions";
 
     private static final String SELECT_BY_ID_SQL = BASE_SELECT_SQL + " WHERE id = ?";
 
@@ -29,13 +28,11 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
 
     private static final String SELECT_ALL_ORDER_BY_NAME_SQL = BASE_SELECT_SQL + " ORDER BY name";
 
-    private static final String UPDATE_SQL =
-            "UPDATE math_functions " +
-                    "SET owner_id = ?, name = ?, function_type = ?, definition_body = ?::jsonb " +
-                    "WHERE id = ?";
+    private static final String UPDATE_SQL = "UPDATE math_functions " +
+            "SET owner_id = ?, name = ?, function_type = ?, definition_body = CAST(? AS jsonb) " +
+            "WHERE id = ?";
 
-    private static final String DELETE_SQL =
-            "DELETE FROM math_functions WHERE id = ?";
+    private static final String DELETE_SQL = "DELETE FROM math_functions WHERE id = ?";
 
     private final DatabaseConnectionManager connectionManager;
 
@@ -46,7 +43,7 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
     @Override
     public MathFunction create(MathFunction function) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {
 
             statement.setObject(1, function.getOwnerId());
             statement.setString(2, function.getName());
@@ -61,6 +58,9 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
                 throw new DaoException("Сервер не вернул идентификатор новой функции");
             }
         } catch (SQLException e) {
+            if ("23505".equals(e.getSQLState())) {
+                throw new IllegalStateException("Function with this name already exists", e);
+            }
             throw new DaoException("Ошибка сохранения математической функции", e);
         }
     }
@@ -98,7 +98,7 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
     @Override
     public boolean update(MathFunction function) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(UPDATE_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(UPDATE_SQL)) {
 
             statement.setObject(1, function.getOwnerId());
             statement.setString(2, function.getName());
@@ -108,6 +108,9 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
 
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
+            if ("23505".equals(e.getSQLState())) {
+                throw new IllegalStateException("Function with this name already exists", e);
+            }
             throw new DaoException("Ошибка обновления математической функции", e);
         }
     }
@@ -115,7 +118,7 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
     @Override
     public boolean delete(Long id) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(DELETE_SQL)) {
+                PreparedStatement statement = connection.prepareStatement(DELETE_SQL)) {
             statement.setObject(1, id);
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -130,7 +133,7 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
 
     private List<MathFunction> executeListQuery(String sql, Object... parameters) {
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             for (int i = 0; i < parameters.length; i++) {
                 statement.setObject(i + 1, parameters[i]);
             }
@@ -149,9 +152,17 @@ public class JdbcMathFunctionDao implements MathFunctionDao {
     private MathFunction mapRow(ResultSet rs) throws SQLException {
         MathFunction function = new MathFunction();
         function.setId(rs.getLong("id"));
-        function.setOwnerId((Long) rs.getObject("owner_id"));
+        Object ownerIdObj = rs.getObject("owner_id");
+        if (ownerIdObj instanceof Integer) {
+            function.setOwnerId(((Integer) ownerIdObj).longValue());
+        } else if (ownerIdObj instanceof Long) {
+            function.setOwnerId((Long) ownerIdObj);
+        } else if (ownerIdObj != null) {
+            function.setOwnerId(Long.valueOf(ownerIdObj.toString()));
+        }
         function.setName(rs.getString("name"));
         function.setFunctionType(rs.getString("function_type"));
+
         function.setDefinitionBody(rs.getString("definition_body"));
         return function;
     }

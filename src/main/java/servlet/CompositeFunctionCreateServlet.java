@@ -20,7 +20,6 @@ import java.util.List;
 public class CompositeFunctionCreateServlet extends BaseApiServlet {
     private static final Logger logger = LoggerFactory.getLogger(CompositeFunctionCreateServlet.class);
 
-    private final Gson gson = new Gson();
     private final FunctionService functionService = ServiceLocator.getInstance().getFunctionService();
 
     @Override
@@ -44,22 +43,25 @@ public class CompositeFunctionCreateServlet extends BaseApiServlet {
             return;
         }
 
-        if (body == null || isBlank(body.name) || body.components == null || body.components.isEmpty()) {
-            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "name and components are required");
+        if (body == null || isBlank(body.name) || body.componentIds == null || body.componentIds.isEmpty()) {
+            sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "name and componentIds are required");
             return;
         }
 
         try {
-            FunctionFullDto dto = functionService.createComposite(userId, body.name, body.components);
+            FunctionFullDto dto = functionService.createComposite(userId, body.name, body.componentIds);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             try (PrintWriter writer = resp.getWriter()) {
                 writer.write(gson.toJson(dto));
             }
             logger.info("Создана составная функция {} пользователем {} за {} мс",
-                    dto.getSummary().getId(), userId, System.currentTimeMillis() - start);
+                    dto.getId(), userId, System.currentTimeMillis() - start);
         } catch (IllegalArgumentException e) {
             logger.warn("Ошибка валидации составной функции", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.warn("Функция с таким именем уже существует", e);
+            sendErrorResponse(req, resp, HttpServletResponse.SC_CONFLICT, e.getMessage());
         } catch (Exception e) {
             logger.error("Внутренняя ошибка при создании составной функции", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal error");
@@ -72,6 +74,6 @@ public class CompositeFunctionCreateServlet extends BaseApiServlet {
 
     private static class CreateCompositeRequest {
         String name;
-        List<Long> components;
+        List<Long> componentIds;
     }
 }
