@@ -1,5 +1,6 @@
 package service;
 
+import dao.UserRoleDao;
 import dto.User;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -7,9 +8,13 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public final class AuthHelper {
     private static final Logger logger = LoggerFactory.getLogger(AuthHelper.class);
+    private static final String USER_ROLES_ATTRIBUTE = "userRoles";
 
     private AuthHelper() {
     }
@@ -43,6 +48,48 @@ public final class AuthHelper {
 
         AuthService authService = ServiceLocator.getInstance().getAuthService();
         User user = authService.login(username, password);
-        return user != null ? user.getId() : null;
+        if (user == null) {
+            return null;
+        }
+
+        // Load and cache user roles in request attribute
+        loadUserRoles(req, user.getId());
+        return user.getId();
+    }
+
+    public static Set<String> getUserRoles(HttpServletRequest req) {
+        @SuppressWarnings("unchecked")
+        Set<String> roles = (Set<String>) req.getAttribute(USER_ROLES_ATTRIBUTE);
+        if (roles == null) {
+            Long userId = getCurrentUserId(req);
+            if (userId != null) {
+                roles = loadUserRoles(req, userId);
+            } else {
+                roles = new HashSet<>();
+            }
+        }
+        return roles;
+    }
+
+    private static Set<String> loadUserRoles(HttpServletRequest req, Long userId) {
+        @SuppressWarnings("unchecked")
+        Set<String> cached = (Set<String>) req.getAttribute(USER_ROLES_ATTRIBUTE);
+        if (cached != null) {
+            return cached;
+        }
+
+        try {
+            UserRoleDao userRoleDao = ServiceLocator.getInstance().getUserRoleDao();
+            List<String> roleList = userRoleDao.findRolesByUserId(userId);
+            Set<String> roles = new HashSet<>(roleList);
+            req.setAttribute(USER_ROLES_ATTRIBUTE, roles);
+            logger.debug("Загружены роли пользователя {}: {}", userId, roles);
+            return roles;
+        } catch (Exception e) {
+            logger.warn("Ошибка загрузки ролей пользователя {}", userId, e);
+            Set<String> emptyRoles = new HashSet<>();
+            req.setAttribute(USER_ROLES_ATTRIBUTE, emptyRoles);
+            return emptyRoles;
+        }
     }
 }

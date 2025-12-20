@@ -1,6 +1,5 @@
 package servlet;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dto.PerformanceMetrics;
 import jakarta.servlet.annotation.WebServlet;
@@ -27,13 +26,24 @@ public class MetricsServlet extends BaseApiServlet {
         resp.setContentType("application/json");
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
+        Long userId = getCurrentUserId(req);
+        if (userId == null) {
+            requireAuth(req, resp);
+            return;
+        }
+
+        requireRole(req, resp, "ADMIN");
+        if (resp.isCommitted()) {
+            return;
+        }
+
         try {
             List<PerformanceMetrics> metrics = metricsService.getAll();
             resp.setStatus(HttpServletResponse.SC_OK);
             try (PrintWriter writer = resp.getWriter()) {
                 writer.write(gson.toJson(metrics));
             }
-            logger.info("Получено {} метрик производительности", metrics.size());
+            logger.info("Пользователь {} получил {} метрик производительности", userId, metrics.size());
         } catch (Exception e) {
             logger.error("Ошибка получения метрик производительности", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal error");

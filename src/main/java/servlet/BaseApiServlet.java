@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Set;
 import dto.ErrorResponse;
 
 public abstract class BaseApiServlet extends HttpServlet {
@@ -56,5 +57,25 @@ public abstract class BaseApiServlet extends HttpServlet {
         }
         logger.warn("Неавторизованный запрос {} {}", req.getMethod(), req.getRequestURI());
         sendErrorResponse(req, resp, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+    }
+
+    protected void requireRole(HttpServletRequest req, HttpServletResponse resp, String role) throws IOException {
+        Long userId = getCurrentUserId(req);
+        if (userId == null) {
+            logger.warn("Попытка проверки роли без аутентификации {} {}", req.getMethod(), req.getRequestURI());
+            sendErrorResponse(req, resp, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+            return;
+        }
+
+        Set<String> userRoles = AuthHelper.getUserRoles(req);
+        if (!userRoles.contains(role)) {
+            logger.warn("Пользователь {} не имеет роли {} для доступа к {} {}", userId, role, req.getMethod(),
+                    req.getRequestURI());
+            sendErrorResponse(req, resp, HttpServletResponse.SC_FORBIDDEN, "Forbidden: role " + role + " required");
+            return;
+        }
+
+        logger.debug("Проверка роли {} пройдена для пользователя {} на {} {}", role, userId, req.getMethod(),
+                req.getRequestURI());
     }
 }

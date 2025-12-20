@@ -36,6 +36,17 @@ public class EngineServlet extends BaseApiServlet {
         resp.setContentType("text/plain");
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
+        Long userId = getCurrentUserId(req);
+        if (userId == null) {
+            requireAuth(req, resp);
+            return;
+        }
+
+        requireRole(req, resp, "ADMIN");
+        if (resp.isCommitted()) {
+            return;
+        }
+
         String body = readBody(req);
         if (body == null || body.isBlank()) {
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "engine is required");
@@ -56,7 +67,7 @@ public class EngineServlet extends BaseApiServlet {
             try (PrintWriter writer = resp.getWriter()) {
                 writer.write(currentEngine);
             }
-            logger.info("Обновлён движок табулирования на {}", currentEngine);
+            logger.info("Пользователь {} обновил движок табулирования на {}", userId, currentEngine);
         } catch (IllegalArgumentException e) {
             logger.warn("Ошибка обновления движка", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());

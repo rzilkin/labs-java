@@ -8,10 +8,12 @@ import dao.JdbcMathFunctionDao;
 import dao.JdbcPerformanceMetricDao;
 import dao.JdbcTabulatedDatasetDao;
 import dao.JdbcUserDao;
+import dao.JdbcUserRoleDao;
 import dao.MathFunctionDao;
 import dao.PerformanceMetricDao;
 import dao.TabulatedDatasetDao;
 import dao.UserDao;
+import dao.UserRoleDao;
 import db.DatabaseConfig;
 import db.DatabaseConfigLoader;
 import db.DatabaseConnectionManager;
@@ -25,6 +27,7 @@ public final class ServiceLocator {
 
     private final DatabaseConnectionManager connectionManager;
     private final UserDao userDao;
+    private final UserRoleDao userRoleDao;
     private final MathFunctionDao mathFunctionDao;
     private final TabulatedDatasetDao tabulatedDatasetDao;
     private final DatasetPointDao datasetPointDao;
@@ -43,6 +46,7 @@ public final class ServiceLocator {
 
         this.connectionManager = new DatabaseConnectionManager(config);
         this.userDao = new JdbcUserDao(connectionManager);
+        this.userRoleDao = new JdbcUserRoleDao(connectionManager);
         this.mathFunctionDao = new JdbcMathFunctionDao(connectionManager);
         this.tabulatedDatasetDao = new JdbcTabulatedDatasetDao(connectionManager);
         this.datasetPointDao = new JdbcDatasetPointDao(connectionManager);
@@ -75,5 +79,13 @@ public final class ServiceLocator {
 
     public MetricsService getMetricsService() {
         return metricsService;
+    }
+
+    public UserDao getUserDao() {
+        return userDao;
+    }
+
+    public UserRoleDao getUserRoleDao() {
+        return userRoleDao;
     }
 }
