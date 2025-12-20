@@ -5,12 +5,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class UiPingController {
-    @GetMapping("/api/ui/ping")
+    @GetMapping("/api/v1/ui/ping")
     public String ping() {
-        return "UI backend is alive";
+        return "UI Бэк живой";
     }
 
-    @GetMapping("/api/ui/crash")
+    @GetMapping("/api/v1/ui/crash")
     public String crash() {
         throw new IllegalArgumentException("Пример ошибки: неправильно введены данные");
     }
