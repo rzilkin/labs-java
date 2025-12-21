@@ -16,17 +16,28 @@ export function ErrorModal({ message, onClose }: Props) {
     >
       <div
         style={{
-          background: "#111",
-          color: "#fff",
+          background: "var(--card)",
+          color: "var(--text)",
           padding: 20,
           borderRadius: 12,
           width: 420,
+          border: "1px solid var(--border)",
+          boxShadow: "var(--shadow)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ marginTop: 0 }}>Ошибка</h3>
-        <div style={{ whiteSpace: "pre-wrap" }}>{message}</div>
-        <button style={{ marginTop: 12 }} onClick={onClose}>
+        <h3 style={{ marginTop: 0, color: "var(--text)" }}>Ошибка</h3>
+        <div style={{ whiteSpace: "pre-wrap", color: "var(--text)", marginBottom: 16 }}>{message}</div>
+        <button
+          onClick={onClose}
+          style={{
+            padding: "8px 16px",
+            background: "var(--btn-bg)",
+            color: "var(--btn-text)",
+            border: "1px solid var(--border)",
+            cursor: "pointer",
+          }}
+        >
           Закрыть
         </button>
       </div>
