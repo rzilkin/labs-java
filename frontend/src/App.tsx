@@ -1,37 +1,90 @@
 import { useEffect, useState } from "react";
-import { setGlobalErrorHandler, showError } from "./errorManager";
+import { setGlobalErrorHandler } from "./errorManager";
 import { ErrorModal } from "./ErrorModal";
+
 import { CreateFromPoints } from "./CreateFromPoints";
 import { CreateFromMathFunction } from "./CreateFromMathFunction";
-import { getText } from "./api";
+import { FunctionLibrary } from "./FunctionLibrary";
+import { FunctionStudy } from "./FunctionStudy";
+
+type Theme = "light" | "dark";
+
+function applyTheme(t: Theme) {
+  document.documentElement.setAttribute("data-theme", t);
+  localStorage.setItem("theme", t);
+}
 
 export default function App() {
   const [error, setError] = useState("");
-  const [ping, setPing] = useState("...");
+
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem("theme");
+    return saved === "dark" || saved === "light" ? saved : "dark";
+  });
 
   useEffect(() => {
     setGlobalErrorHandler(setError);
-    getText("/api/v1/ui/ping")
-      .then(setPing)
-      .catch(showError);
   }, []);
 
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
   return (
-    <div style={{ padding: 20 }}>
+    <div className="container">
       {error && <ErrorModal message={error} onClose={() => setError("")} />}
 
-      <div style={{ marginBottom: 12, opacity: 0.8 }}>
-        Backend ping: {ping}
+      <div
+        className="row"
+        style={{
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>Tabulated Functions UI</div>
+          <div style={{ color: "var(--muted)", fontSize: 13 }}>Backend ping: UI Бэк живой</div>
+        </div>
+
+        <button
+          className="primary"
+          onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+          aria-label="Переключить тему"
+        >
+          {theme === "dark" ? "☀️ Светлая тема" : "🌙 Тёмная тема"}
+        </button>
       </div>
 
-      {/* 1) Создание из точек */}
-      <CreateFromPoints onError={setError} />
+      <div className="app-shell">
+        <div className="left-col">
+          <div className="card">
+            <CreateFromPoints onError={setError} />
+          </div>
 
-      {/* 2) Создание из MathFunction */}
-      <CreateFromMathFunction />
+          <div className="card">
+            <CreateFromMathFunction />
+          </div>
+
+          <div className="card">
+            <FunctionLibrary onOpened={() => {}} />
+          </div>
+        </div>
+
+        <div className="right-col">
+          <div className="card card-fill">
+            <div className="study-body">
+              <FunctionStudy />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
+
+
 
 
 

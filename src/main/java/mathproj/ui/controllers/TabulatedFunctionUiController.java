@@ -1,23 +1,30 @@
 package mathproj.ui.controllers;
 
+import mathproj.functions.Insertable;
 import mathproj.functions.MathFunction;
+import mathproj.functions.Removable;
 import mathproj.functions.TabulatedFunction;
-import mathproj.functions.factory.ArrayTabulatedFunctionFactory;
-import mathproj.functions.factory.TabulatedFunctionFactory;
-import mathproj.ui.dto.CreateFromMathFunctionRequest;
-import mathproj.ui.dto.CreateFromPointsRequest;
-import mathproj.ui.dto.CreateResultDto;
+import mathproj.ui.dto.*;
 import mathproj.ui.registry.MathFunctionRegistry;
-
+import mathproj.ui.service.CurrentFunctionService;
+import mathproj.ui.service.FunctionStoreService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/ui")
 public class TabulatedFunctionUiController {
-    private final TabulatedFunctionFactory factory = new ArrayTabulatedFunctionFactory();
+
+    private final CurrentFunctionService current;
+    private final FunctionStoreService store;
+
+    public TabulatedFunctionUiController(CurrentFunctionService current, FunctionStoreService store) {
+        this.current = current;
+        this.store = store;
+    }
 
     @GetMapping("/math-functions")
     public List<String> mathFunctions() {
@@ -45,13 +52,14 @@ public class TabulatedFunctionUiController {
             x[i] = req.points.get(i).getX();
             y[i] = req.points.get(i).getY();
         }
-        TabulatedFunction f = factory.create(x, y);
-        return ResponseEntity.ok(new CreateResultDto(req.name, f.getCount()));
+
+        TabulatedFunction f = current.createFromPoints(x, y);
+        String id = store.add(req.name, f);
+        return ResponseEntity.ok(new CreateResultDto(id, req.name, f.getCount()));
     }
 
     @PostMapping("/tabulated/from-math-function")
     public ResponseEntity<CreateResultDto> createFromMath(@RequestBody CreateFromMathFunctionRequest req) {
-
         if (req.name == null || req.name.isBlank()) {
             throw new IllegalArgumentException("Имя функции не должно быть пустым.");
         }
@@ -72,11 +80,80 @@ public class TabulatedFunctionUiController {
         }
 
         MathFunction base = supplier.get();
-        TabulatedFunction f = factory.create(base, req.xFrom, req.xTo, req.count);
+        TabulatedFunction f = current.createFromMathFunction(base, req.xFrom, req.xTo, req.count);
+        String id = store.add(req.name, f);
+        return ResponseEntity.ok(new CreateResultDto(id, req.name, f.getCount()));
+    }
 
-        return ResponseEntity.ok(new CreateResultDto(req.name, f.getCount()));
+    @GetMapping("/tabulated/current")
+    public TabulatedFunctionDto getCurrent() {
+        TabulatedFunction f = current.getOrThrow();
+
+        List<PointDto> pts = new ArrayList<>();
+        for (int i = 0; i < f.getCount(); i++) {
+            pts.add(new PointDto(f.getX(i), f.getY(i)));
+        }
+
+        boolean insertable = f instanceof Insertable;
+        boolean removable = f instanceof Removable;
+
+        return new TabulatedFunctionDto("current", pts, insertable, removable);
+    }
+
+    @GetMapping("/tabulated/current/apply")
+    public double apply(@RequestParam("x") double x) {
+        TabulatedFunction f = current.getOrThrow();
+        return f.apply(x);
+    }
+
+    @GetMapping("/tabulated/current/serialize")
+    public String serialize() {
+        return current.serializeToBase64();
+    }
+
+    @PostMapping("/tabulated/current/deserialize")
+    public TabulatedFunctionDto deserialize(@RequestBody DeserializeRequest req) {
+        if (req.base64 == null || req.base64.isBlank()) {
+            throw new IllegalArgumentException("base64 пустой");
+        }
+
+        TabulatedFunction f = current.deserializeFromBase64(req.base64);
+
+        List<PointDto> pts = new ArrayList<>();
+        for (int i = 0; i < f.getCount(); i++) {
+            pts.add(new PointDto(f.getX(i), f.getY(i)));
+        }
+
+        boolean insertable = f instanceof Insertable;
+        boolean removable = f instanceof Removable;
+
+        return new TabulatedFunctionDto("current", pts, insertable, removable);
+    }
+
+    @PostMapping("/tabulated/current/insert")
+    public TabulatedFunctionDto insert(@RequestParam("x") double x, @RequestParam("y") double y) {
+        TabulatedFunction f = current.getOrThrow();
+        if (!(f instanceof Insertable ins)) {
+            throw new IllegalStateException("Функция не поддерживает вставку (Insertable).");
+        }
+
+        ins.insert(x, y);
+        return getCurrent();
+    }
+
+    @DeleteMapping("/tabulated/current/remove")
+    public TabulatedFunctionDto remove(@RequestParam("index") int index) {
+        TabulatedFunction f = current.getOrThrow();
+        if (!(f instanceof Removable rem)) {
+            throw new IllegalStateException("Функция не поддерживает удаление (Removable).");
+        }
+
+        rem.remove(index);
+        return getCurrent();
     }
 }
+
+
 
 
 

@@ -1,9 +1,11 @@
 package mathproj.functions;
 
+import mathproj.ui.registry.UiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 //класс, реализующий интерфейс MathFunction, который выполняет тождественное преобразование
+@UiFunction(name = "Тождественная функция", priority = 10)
 public class IdentifyFunction implements MathFunction {
     private static final Logger log = LoggerFactory.getLogger(IdentifyFunction.class);
 

@@ -1,6 +1,8 @@
 package mathproj.ui.registry;
 
-import mathproj.functions.*;
+import mathproj.functions.MathFunction;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -8,21 +10,54 @@ import java.util.function.Supplier;
 public class MathFunctionRegistry {
 
     public static Map<String, Supplier<MathFunction>> functions() {
-        Map<String, Supplier<MathFunction>> map = new HashMap<>();
+        var provider = new ClassPathScanningCandidateComponentProvider(false);
+        provider.addIncludeFilter(new AnnotationTypeFilter(UiFunction.class));
 
-        map.put("Квадратичная функция", SqrFunction::new);
-        map.put("Тождественная функция", IdentifyFunction::new);
-        map.put("Нулевая функция", ZeroFunction::new);
-        map.put("Единичная функция", UnitFunction::new);
+        Map<String, Entry> tmp = new HashMap<>();
 
-        List<Map.Entry<String, Supplier<MathFunction>>> entries = new ArrayList<>(map.entrySet());
-        entries.sort(Map.Entry.comparingByKey());
+        for (var beanDef : provider.findCandidateComponents("mathproj.functions")) {
+            try {
+                Class<?> clazz = Class.forName(beanDef.getBeanClassName());
+                if (!MathFunction.class.isAssignableFrom(clazz)) continue;
 
-        Map<String, Supplier<MathFunction>> sorted = new LinkedHashMap<>();
-        for (var e : entries) sorted.put(e.getKey(), e.getValue());
+                UiFunction ann = clazz.getAnnotation(UiFunction.class);
+                if (ann == null) continue;
 
-        return sorted;
+                var ctor = clazz.getDeclaredConstructor();
+                ctor.setAccessible(true);
+
+                @SuppressWarnings("unchecked")
+                Class<? extends MathFunction> mfClass = (Class<? extends MathFunction>) clazz;
+
+                tmp.put(ann.name(), new Entry(
+                        ann.name(),
+                        ann.priority(),
+                        () -> {
+                            try {
+                                return mfClass.getDeclaredConstructor().newInstance();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                ));
+            } catch (NoSuchMethodException e) {
+            } catch (Exception e) {
+                throw new RuntimeException("Ошибка сканирования функций", e);
+            }
+        }
+
+        List<Entry> list = new ArrayList<>(tmp.values());
+        list.sort(Comparator
+                .comparingInt(Entry::priority)
+                .thenComparing(Entry::name, String::compareToIgnoreCase));
+
+        Map<String, Supplier<MathFunction>> out = new LinkedHashMap<>();
+        for (var e : list) out.put(e.name, e.supplier);
+        return out;
     }
+
+    private record Entry(String name, int priority, Supplier<MathFunction> supplier) {}
 }
+
 
 

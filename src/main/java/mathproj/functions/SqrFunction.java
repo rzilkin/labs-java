@@ -1,9 +1,11 @@
 package mathproj.functions;
 
+import mathproj.ui.registry.UiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // Функция, возводящая х в квадрат
+@UiFunction(name = "Квадратичная функция", priority = 10)
 public class SqrFunction implements MathFunction {
     private static final Logger logger = LoggerFactory.getLogger(SqrFunction.class);
 
