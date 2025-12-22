@@ -23,42 +23,121 @@ export function clearCredentials() {
   localStorage.removeItem('password');
 }
 
-export async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    credentials: 'include',
-    body: JSON.stringify(body),
-  });
+// Global logout handler - will be set by App component
+let globalLogoutHandler: (() => void) | null = null;
 
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const e = await res.json();
-      if (e?.message) msg = e.message;
-    } catch { }
-    throw new Error(msg);
+export function setLogoutHandler(handler: (() => void) | null) {
+  globalLogoutHandler = handler;
+}
+
+export function handle401Error() {
+  // Clear credentials
+  clearCredentials();
+  // Call logout handler if set
+  if (globalLogoutHandler) {
+    globalLogoutHandler();
   }
+}
 
-  return (await res.json()) as T;
+export async function postJson<T>(path: string, body: unknown): Promise<T> {
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      // Handle 401 Unauthorized - auto logout
+      if (res.status === 401) {
+        handle401Error();
+        throw new Error('Сессия истекла. Войдите заново.');
+      }
+
+      let msg = `HTTP ${res.status}`;
+      try {
+        const e = await res.json();
+        if (e?.message) {
+          msg = e.message;
+        } else if (e?.error) {
+          msg = e.error;
+        }
+      } catch {
+        // If JSON parsing fails, use status-based message
+        const statusMessages: { [key: number]: string } = {
+          400: 'Неверный запрос. Проверьте введенные данные',
+          401: 'Не авторизован. Пожалуйста, войдите в систему',
+          403: 'Доступ запрещен',
+          404: 'Ресурс не найден',
+          409: 'Конфликт данных',
+          422: 'Ошибка валидации данных',
+          500: 'Внутренняя ошибка сервера',
+          503: 'Сервис временно недоступен',
+        };
+        msg = statusMessages[res.status] || `Ошибка сервера (${res.status})`;
+      }
+      throw new Error(msg);
+    }
+
+    return (await res.json()) as T;
+  } catch (e) {
+    if (e instanceof Error) {
+      throw e;
+    }
+    if (e instanceof TypeError && e.message.includes('fetch')) {
+      throw new Error('Ошибка сети. Проверьте подключение к интернету');
+    }
+    throw new Error('Произошла неизвестная ошибка при выполнении запроса');
+  }
 }
 
 export async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  try {
+    const res = await fetch(`${API}${path}`, {
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
 
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const e = await res.json();
-      if (e?.message) msg = e.message;
-    } catch { }
-    throw new Error(msg);
+    if (!res.ok) {
+      // Handle 401 Unauthorized - auto logout
+      if (res.status === 401) {
+        handle401Error();
+        throw new Error('Сессия истекла. Войдите заново.');
+      }
+
+      let msg = `HTTP ${res.status}`;
+      try {
+        const e = await res.json();
+        if (e?.message) {
+          msg = e.message;
+        } else if (e?.error) {
+          msg = e.error;
+        }
+      } catch {
+        const statusMessages: { [key: number]: string } = {
+          400: 'Неверный запрос',
+          401: 'Не авторизован. Пожалуйста, войдите в систему',
+          403: 'Доступ запрещен',
+          404: 'Ресурс не найден',
+          500: 'Внутренняя ошибка сервера',
+          503: 'Сервис временно недоступен',
+        };
+        msg = statusMessages[res.status] || `Ошибка сервера (${res.status})`;
+      }
+      throw new Error(msg);
+    }
+
+    return (await res.json()) as T;
+  } catch (e) {
+    if (e instanceof Error) {
+      throw e;
+    }
+    if (e instanceof TypeError && e.message.includes('fetch')) {
+      throw new Error('Ошибка сети. Проверьте подключение к интернету');
+    }
+    throw new Error('Произошла неизвестная ошибка при загрузке данных');
   }
-
-  return (await res.json()) as T;
 }
 
 export async function getText(path: string): Promise<string> {
@@ -66,42 +145,103 @@ export async function getText(path: string): Promise<string> {
     headers: getAuthHeaders(),
     credentials: 'include',
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    // Handle 401 Unauthorized - auto logout
+    if (res.status === 401) {
+      handle401Error();
+      throw new Error('Сессия истекла. Войдите заново.');
+    }
+    throw new Error(`HTTP ${res.status}`);
+  }
   return await res.text();
 }
 
 export async function deleteRequest(path: string): Promise<void> {
-  const res = await fetch(`${API}${path}`, {
-    method: "DELETE",
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const e = await res.json();
-      if (e?.message) msg = e.message;
-    } catch { }
-    throw new Error(msg);
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      // Handle 401 Unauthorized - auto logout
+      if (res.status === 401) {
+        handle401Error();
+        throw new Error('Сессия истекла. Войдите заново.');
+      }
+
+      let msg = `HTTP ${res.status}`;
+      try {
+        const e = await res.json();
+        if (e?.message) {
+          msg = e.message;
+        } else if (e?.error) {
+          msg = e.error;
+        }
+      } catch {
+        const statusMessages: { [key: number]: string } = {
+          400: 'Неверный запрос',
+          401: 'Не авторизован. Пожалуйста, войдите в систему',
+          403: 'Доступ запрещен',
+          404: 'Ресурс не найден',
+          500: 'Внутренняя ошибка сервера',
+        };
+        msg = statusMessages[res.status] || `Ошибка сервера (${res.status})`;
+      }
+      throw new Error(msg);
+    }
+  } catch (e) {
+    if (e instanceof Error) {
+      throw e;
+    }
+    if (e instanceof TypeError && e.message.includes('fetch')) {
+      throw new Error('Ошибка сети. Проверьте подключение к интернету');
+    }
+    throw new Error('Произошла неизвестная ошибка при удалении');
   }
 }
 
 export async function putJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    method: "PUT",
-    headers: getAuthHeaders(),
-    credentials: 'include',
-    body: JSON.stringify(body),
-  });
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
 
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const e = await res.json();
-      if (e?.message) msg = e.message;
-    } catch { }
-    throw new Error(msg);
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try {
+        const e = await res.json();
+        if (e?.message) {
+          msg = e.message;
+        } else if (e?.error) {
+          msg = e.error;
+        }
+      } catch {
+        const statusMessages: { [key: number]: string } = {
+          400: 'Неверный запрос. Проверьте введенные данные',
+          401: 'Не авторизован. Пожалуйста, войдите в систему',
+          403: 'Доступ запрещен',
+          404: 'Ресурс не найден',
+          409: 'Конфликт данных',
+          422: 'Ошибка валидации данных',
+          500: 'Внутренняя ошибка сервера',
+        };
+        msg = statusMessages[res.status] || `Ошибка сервера (${res.status})`;
+      }
+      throw new Error(msg);
+    }
+
+    return (await res.json()) as T;
+  } catch (e) {
+    if (e instanceof Error) {
+      throw e;
+    }
+    if (e instanceof TypeError && e.message.includes('fetch')) {
+      throw new Error('Ошибка сети. Проверьте подключение к интернету');
+    }
+    throw new Error('Произошла неизвестная ошибка при обновлении данных');
   }
-
-  return (await res.json()) as T;
 }

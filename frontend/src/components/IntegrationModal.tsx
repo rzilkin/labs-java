@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { getJson, postJson } from '../api';
 import { showError } from '../errorManager';
+import { validateThreadCount } from '../utils/validation';
 
 interface FunctionSummary {
     id: number;
@@ -32,9 +33,13 @@ export function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
         try {
             setLoading(true);
             const data = await getJson<FunctionSummary[]>('/api/v1/functions');
-            setFunctions(data || []);
-            if (data && data.length > 0) {
-                setSelectedFunctionId(data[0].id);
+            // Filter to only show TABULATED functions
+            const tabulatedFunctions = (data || []).filter(f => f.type === 'TABULATED');
+            setFunctions(tabulatedFunctions);
+            if (tabulatedFunctions.length > 0) {
+                setSelectedFunctionId(tabulatedFunctions[0].id);
+            } else {
+                setSelectedFunctionId(null);
             }
         } catch (e) {
             showError(e);
@@ -45,18 +50,21 @@ export function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
 
     const handleIntegrate = async () => {
         if (!selectedFunctionId) {
-            showError(new Error('Выберите функцию'));
+            showError(new Error('Выберите табулированную функцию'), true);
             return;
         }
 
-        const threadCount = parseInt(threads, 10);
-        if (isNaN(threadCount) || threadCount < 1) {
-            showError(new Error('Количество потоков должно быть положительным числом'));
+        // Check if selected function is tabulated
+        const selectedFunction = functions.find(f => f.id === selectedFunctionId);
+        if (selectedFunction && selectedFunction.type !== 'TABULATED') {
+            showError(new Error('Только для табулированных функций'), true);
             return;
         }
 
-        if (threadCount > 64) {
-            showError(new Error('Максимальное количество потоков: 64'));
+        // Validate thread count (1-64)
+        const threadError = validateThreadCount(threads, 64);
+        if (threadError) {
+            showError(new Error(threadError), true);
             return;
         }
 
@@ -65,12 +73,21 @@ export function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
             setResult(null);
 
             const response = await postJson<{ value: number }>(`/api/v1/operations/integrate/${selectedFunctionId}`, {
-                threads: threadCount,
+                threads: parseInt(threads, 10),
             });
+
+            if (response === null || response === undefined || typeof response.value !== 'number') {
+                throw new Error('Неверный ответ от сервера');
+            }
+
+            if (!isFinite(response.value)) {
+                throw new Error('Результат интеграла не является конечным числом');
+            }
 
             setResult(response.value);
         } catch (e) {
-            showError(e);
+            showError(e, true);
+            setResult(null);
         } finally {
             setCalculating(false);
         }
@@ -86,16 +103,20 @@ export function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
                     <label style={{ color: 'var(--text)', display: 'block', marginBottom: '8px' }}>Выберите функцию:</label>
                     {loading ? (
                         <div style={{ color: 'var(--text)' }}>Загрузка функций...</div>
+                    ) : functions.length === 0 ? (
+                        <div style={{ color: 'var(--text)', padding: '10px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '4px' }}>
+                            Нет табулированных функций. Создайте табулированную функцию для вычисления интеграла.
+                        </div>
                     ) : (
                         <select
                             value={selectedFunctionId || ''}
-                            onChange={(e) => setSelectedFunctionId(Number(e.target.value))}
+                            onChange={(e) => setSelectedFunctionId(e.target.value ? Number(e.target.value) : null)}
                             style={{ width: '100%', padding: '8px', background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--border)' }}
                         >
-                            <option value="">Выберите функцию</option>
+                            <option value="">Выберите табулированную функцию</option>
                             {functions.map(f => (
                                 <option key={f.id} value={f.id}>
-                                    {f.name} (ID: {f.id}, Тип: {f.type})
+                                    {f.name} (ID: {f.id})
                                 </option>
                             ))}
                         </select>
@@ -116,7 +137,7 @@ export function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
                         style={{ width: '100%', padding: '8px', background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--border)' }}
                     />
                     <div style={{ color: 'var(--muted)', fontSize: '12px', marginTop: '5px' }}>
-                        Рекомендуемое значение: 8 потоков
+                        По умолчанию: 8 потоков
                     </div>
                 </div>
 
@@ -152,7 +173,7 @@ export function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
                                 Интеграл функции "{selectedFunction?.name}"
                             </div>
                             <div style={{ color: 'var(--text)', fontSize: '24px', fontWeight: 'bold' }}>
-                                ∫ f(x) dx = {result.toFixed(10)}
+                                Интеграл = {result.toFixed(10)}
                             </div>
                         </div>
                     )}
@@ -163,9 +184,10 @@ export function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
                     <div style={{ color: 'var(--text)', fontSize: '14px' }}>
                         <strong>Информация:</strong>
                         <ul style={{ marginTop: '10px', paddingLeft: '20px', color: 'var(--muted)' }}>
-                            <li>Интеграл вычисляется по всей области определения функции</li>
-                            <li>Вычисления выполняются параллельно с использованием указанного количества потоков</li>
-                            <li>Результат представляет собой приближенное значение интеграла</li>
+                            <li>Интеграл вычисляется по всей области определения табулированной функции</li>
+                            <li>Вычисления выполняются параллельно с использованием указанного количества потоков (1-64)</li>
+                            <li>Результат представляет собой приближенное значение определённого интеграла</li>
+                            <li>Используется метод численного интегрирования с параллельной обработкой</li>
                         </ul>
                     </div>
                 </div>

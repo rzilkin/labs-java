@@ -1,6 +1,6 @@
 interface Point {
     x: number;
-    y: number;
+    y: number | null;
 }
 
 interface FunctionTableProps {
@@ -11,9 +11,11 @@ interface FunctionTableProps {
 }
 
 export function FunctionTable({ points, onPointsChange, readonly = false, onRemovePoint }: FunctionTableProps) {
-    const handleYChange = (index: number, newY: number) => {
+    const handleYChange = (index: number, value: string) => {
         if (readonly) return;
         const newPoints = [...points];
+        // If empty string, set to null; otherwise parse as float
+        const newY = value === '' ? null : (isNaN(parseFloat(value)) ? null : parseFloat(value));
         newPoints[index] = { ...newPoints[index], y: newY };
         onPointsChange(newPoints);
     };
@@ -42,12 +44,12 @@ export function FunctionTable({ points, onPointsChange, readonly = false, onRemo
               <td style={{ border: '1px solid var(--border)', padding: '8px', color: 'var(--text)' }}>{point.x}</td>
               <td style={{ border: '1px solid var(--border)', padding: '8px', color: 'var(--text)' }}>
                 {readonly ? (
-                  point.y
+                  point.y ?? ''
                 ) : (
                   <input
                     type="number"
-                    value={point.y}
-                    onChange={(e) => handleYChange(index, parseFloat(e.target.value) || 0)}
+                    value={point.y ?? ''}
+                    onChange={(e) => handleYChange(index, e.target.value)}
                     style={{ 
                       width: '100%', 
                       boxSizing: 'border-box',

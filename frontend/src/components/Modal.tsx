@@ -1,13 +1,17 @@
 import { useEffect } from 'react';
+import { useTheme } from '../ThemeContext';
 
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    zIndex?: number; // Optional z-index for nested modals
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, zIndex = 1000 }: ModalProps) {
+    const { theme } = useTheme();
+
     useEffect(() => {
         if (isOpen) {
             const handleEscape = (e: KeyboardEvent) => {
@@ -22,6 +26,10 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
     if (!isOpen) return null;
 
+    // Solid background colors based on theme
+    const modalContentBg = theme === 'dark' ? '#1e1e1e' : '#ffffff';
+    const overlayBg = 'rgba(0, 0, 0, 0.8)'; // Solid dark overlay
+
     return (
         <div
             style={{
@@ -30,17 +38,17 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                backgroundColor: overlayBg,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                zIndex: 1000,
+                zIndex: zIndex,
             }}
             onClick={onClose}
         >
             <div
                 style={{
-                    backgroundColor: 'var(--card)',
+                    backgroundColor: modalContentBg,
                     color: 'var(--text)',
                     padding: '20px',
                     borderRadius: '4px',

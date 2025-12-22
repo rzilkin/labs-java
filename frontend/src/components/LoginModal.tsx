@@ -17,8 +17,18 @@ export function LoginModal({ isOpen, onClose, onSuccess, onSwitchToRegister }: L
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      showError(new Error('Введите имя пользователя и пароль'));
+    
+    // Validate inputs
+    if (!username.trim()) {
+      showError(new Error('Введите имя пользователя'), true);
+      return;
+    }
+    if (!password.trim()) {
+      showError(new Error('Введите пароль'), true);
+      return;
+    }
+    if (username.trim().length > 50) {
+      showError(new Error('Имя пользователя не должно превышать 50 символов'), true);
       return;
     }
 
@@ -29,25 +39,26 @@ export function LoginModal({ isOpen, onClose, onSuccess, onSwitchToRegister }: L
         method: 'POST',
         headers: {
           'Authorization': `Basic ${btoa(`${username.trim()}:${password}`)}`,
+          'Content-Type': 'application/json',
         },
         credentials: 'include',
       });
       
-      if (response.ok) {
-        // Store credentials for subsequent API calls
-        setCredentials(username.trim(), password);
-      }
-
       if (!response.ok) {
-        throw new Error('Неверное имя пользователя или пароль');
+        if (response.status === 401) {
+          throw new Error('Неверное имя пользователя или пароль');
+        }
+        throw new Error(`Ошибка входа (${response.status})`);
       }
 
+      // Store credentials for subsequent API calls
+      setCredentials(username.trim(), password);
       onSuccess();
       onClose();
       setUsername('');
       setPassword('');
     } catch (e) {
-      showError(e);
+      showError(e, true);
     } finally {
       setLoading(false);
     }

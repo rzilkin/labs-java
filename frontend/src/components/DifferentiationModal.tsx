@@ -1,10 +1,14 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Modal } from './Modal';
 import { FunctionTable } from './FunctionTable';
+import { FunctionListModal } from './FunctionListModal';
+import { getJson, postJson } from '../api';
+import { showError, showSuccess } from '../errorManager';
+import { validateFunctionName, validatePoints } from '../utils/validation';
 
 interface Point {
     x: number;
-    y: number;
+    y: number | null;
 }
 
 interface DifferentiationModalProps {
@@ -16,171 +20,90 @@ interface DifferentiationModalProps {
 export function DifferentiationModal({ isOpen, onClose, factoryKey }: DifferentiationModalProps) {
     const [sourceFunction, setSourceFunction] = useState<Point[]>([]);
     const [result, setResult] = useState<Point[]>([]);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showFunctionList, setShowFunctionList] = useState(false);
 
-    const handleCreate = () => {
+    const handleLoadClick = () => {
+        setShowFunctionList(true);
+    };
+
+    const handleFunctionSelect = async (functionId: number) => {
         try {
-            const countStr = prompt('Введите количество точек (минимум 2):');
-            if (!countStr) return;
+            const data = await getJson<{ summary: { id: number }; points: Point[] }>(`/api/v1/functions/${functionId}`);
 
-            const count = parseInt(countStr, 10);
-            if (isNaN(count) || count < 2) {
-                alert('Количество точек должно быть числом не менее 2');
+            if (!data.points || !Array.isArray(data.points)) {
+                showError(new Error('Функция не является табулированной'), true);
                 return;
             }
 
-            if (count > 500) {
-                alert('Максимум 500 точек');
-                return;
-            }
-
-            const newPoints: Point[] = Array.from({ length: count }, (_, i) => ({
-                x: i,
-                y: 0,
+            const points: Point[] = data.points.map((p: { x: number; y: number | null }) => ({
+                x: p.x,
+                y: p.y ?? null,
             }));
-
-            setSourceFunction(newPoints);
-            setResult([]);
-        } catch (e) {
-            alert(e instanceof Error ? e.message : 'Ошибка при создании функции');
-        }
-    };
-
-    const handleLoad = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        try {
-            const text = await file.text();
-            const data = JSON.parse(text);
-
-            if (!data || !Array.isArray(data.points)) {
-                throw new Error('Неверный формат файла. Ожидается объект с полем points');
-            }
-
-            const points: Point[] = data.points.map((p: any) => {
-                if (typeof p.x !== 'number' || typeof p.y !== 'number') {
-                    throw new Error('Точки должны содержать числовые поля x и y');
-                }
-                return { x: p.x, y: p.y };
-            });
-
-            if (points.length < 2) {
-                throw new Error('Функция должна содержать минимум 2 точки');
-            }
-
-            // Check if x values are sorted
-            for (let i = 1; i < points.length; i++) {
-                if (points[i].x <= points[i - 1].x) {
-                    throw new Error('Значения x должны быть строго возрастающими');
-                }
-            }
 
             setSourceFunction(points);
             setResult([]);
         } catch (e) {
-            alert(e instanceof Error ? e.message : 'Ошибка при загрузке файла');
-        } finally {
-            // Reset file input
-            if (event.target) {
-                event.target.value = '';
-            }
-        }
-    };
-
-    const handleSave = () => {
-        try {
-            if (sourceFunction.length === 0) {
-                alert('Нет функции для сохранения');
-                return;
-            }
-
-            const name = prompt('Введите имя функции:');
-            if (!name) return;
-
-            const data = {
-                name,
-                type: 'TABULATED',
-                points: sourceFunction,
-            };
-
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (e) {
-            alert(e instanceof Error ? e.message : 'Ошибка при сохранении функции');
+            showError(e, true);
         }
     };
 
     const computeNumericalDerivative = (points: Point[]): Point[] => {
-        const n = points.length;
+        // Filter out points with null y values
+        const validPoints = points.filter(p => p.y !== null && p.y !== undefined);
+
+        if (validPoints.length < 2) {
+            throw new Error('Необходимо минимум 2 точки с валидными значениями y');
+        }
+
+        const n = validPoints.length;
         const derivative: Point[] = [];
 
-        if (n < 2) {
-            return [];
-        }
-
         // First point: forward difference
-        if (n >= 2) {
-            const dx = points[1].x - points[0].x;
-            if (Math.abs(dx) < 1e-10) {
-                throw new Error('Интервалы между точками слишком малы');
-            }
-            const dy = points[1].y - points[0].y;
-            derivative.push({
-                x: points[0].x,
-                y: dy / dx,
-            });
+        const dx1 = validPoints[1].x - validPoints[0].x;
+        if (Math.abs(dx1) < 1e-10) {
+            throw new Error('Интервалы между точками слишком малы');
         }
+        const dy1 = (validPoints[1].y as number) - (validPoints[0].y as number);
+        derivative.push({
+            x: validPoints[0].x,
+            y: dy1 / dx1,
+        });
 
         // Inner points: central difference
         for (let i = 1; i < n - 1; i++) {
-            const dxPrev = points[i].x - points[i - 1].x;
-            const dxNext = points[i + 1].x - points[i].x;
+            const dxPrev = validPoints[i].x - validPoints[i - 1].x;
+            const dxNext = validPoints[i + 1].x - validPoints[i].x;
 
             if (Math.abs(dxPrev) < 1e-10 || Math.abs(dxNext) < 1e-10) {
                 throw new Error('Интервалы между точками слишком малы');
             }
 
             // Central difference: (y[i+1] - y[i-1]) / (x[i+1] - x[i-1])
-            const dy = points[i + 1].y - points[i - 1].y;
-            const dx = points[i + 1].x - points[i - 1].x;
+            const dy = (validPoints[i + 1].y as number) - (validPoints[i - 1].y as number);
+            const dx = validPoints[i + 1].x - validPoints[i - 1].x;
             derivative.push({
-                x: points[i].x,
+                x: validPoints[i].x,
                 y: dy / dx,
             });
         }
 
         // Last point: backward difference
-        if (n >= 2) {
-            const dx = points[n - 1].x - points[n - 2].x;
-            if (Math.abs(dx) < 1e-10) {
-                throw new Error('Интервалы между точками слишком малы');
-            }
-            const dy = points[n - 1].y - points[n - 2].y;
-            derivative.push({
-                x: points[n - 1].x,
-                y: dy / dx,
-            });
+        const dxLast = validPoints[n - 1].x - validPoints[n - 2].x;
+        if (Math.abs(dxLast) < 1e-10) {
+            throw new Error('Интервалы между точками слишком малы');
         }
+        const dyLast = (validPoints[n - 1].y as number) - (validPoints[n - 2].y as number);
+        derivative.push({
+            x: validPoints[n - 1].x,
+            y: dyLast / dxLast,
+        });
 
         return derivative;
     };
 
     const handleInsertPoint = () => {
         if (sourceFunction.length === 0) {
-            alert('Сначала создайте или загрузите функцию');
+            showError(new Error('Сначала создайте или загрузите функцию'), true);
             return;
         }
 
@@ -188,7 +111,7 @@ export function DifferentiationModal({ isOpen, onClose, factoryKey }: Differenti
         if (!xStr) return;
         const x = parseFloat(xStr);
         if (isNaN(x)) {
-            alert('x должно быть числом');
+            showError(new Error('x должно быть числом'), true);
             return;
         }
 
@@ -196,12 +119,12 @@ export function DifferentiationModal({ isOpen, onClose, factoryKey }: Differenti
         if (!yStr) return;
         const y = parseFloat(yStr);
         if (isNaN(y)) {
-            alert('y должно быть числом');
+            showError(new Error('y должно быть числом'), true);
             return;
         }
 
         // Insert point maintaining sorted order
-        const newPoint: Point = { x, y };
+        const newPoint: Point = { x, y: y ?? null };
         const newPoints = [...sourceFunction, newPoint].sort((a, b) => a.x - b.x);
         setSourceFunction(newPoints);
         setResult([]);
@@ -209,7 +132,7 @@ export function DifferentiationModal({ isOpen, onClose, factoryKey }: Differenti
 
     const handleRemovePoint = (index: number) => {
         if (sourceFunction.length <= 2) {
-            alert('Функция должна содержать минимум 2 точки');
+            showError(new Error('Функция должна содержать минимум 2 точки'), true);
             return;
         }
 
@@ -222,38 +145,92 @@ export function DifferentiationModal({ isOpen, onClose, factoryKey }: Differenti
 
     const handleDifferentiate = () => {
         try {
-            if (sourceFunction.length < 2) {
-                alert('Нужно минимум 2 точки');
+            // Filter out null y values for validation
+            const validPoints = sourceFunction.filter(p => p.y !== null && p.y !== undefined) as Array<{ x: number; y: number }>;
+
+            if (validPoints.length < 2) {
+                showError(new Error('Нужно минимум 2 точки с валидными значениями y'), true);
                 return;
             }
 
-            // Check if x values are sorted
-            for (let i = 1; i < sourceFunction.length; i++) {
-                if (sourceFunction[i].x <= sourceFunction[i - 1].x) {
-                    alert('Значения x должны быть строго возрастающими');
-                    return;
-                }
+            // Validate points
+            const pointsError = validatePoints(validPoints);
+            if (pointsError) {
+                showError(new Error(pointsError), true);
+                return;
             }
 
-            // Compute derivative using numerical differentiation
+            // Compute derivative using numerical differentiation locally
             // The factory selection (array vs linked-list) is noted but doesn't affect
             // the numerical differentiation algorithm itself
             const derivative = computeNumericalDerivative(sourceFunction);
 
             setResult(derivative);
         } catch (e) {
-            alert(e instanceof Error ? e.message : 'Ошибка при дифференцировании');
+            showError(e instanceof Error ? e : new Error('Ошибка при дифференцировании'), true);
+        }
+    };
+
+    const handleSaveResult = async () => {
+        if (result.length === 0) {
+            showError(new Error('Нет результата для сохранения'), true);
+            return;
+        }
+
+        try {
+            const name = prompt('Введите имя для новой функции:');
+            if (!name) return;
+
+            // Validate name
+            const nameError = validateFunctionName(name);
+            if (nameError) {
+                showError(new Error(nameError), true);
+                return;
+            }
+
+            // Filter out null y values and convert to valid points
+            const validPoints = result
+                .filter(p => p.y !== null && p.y !== undefined && !isNaN(p.y as number))
+                .map(p => ({ x: p.x, y: p.y as number }));
+
+            if (validPoints.length < 2) {
+                showError(new Error('Результат должен содержать минимум 2 валидные точки'), true);
+                return;
+            }
+
+            // Validate points
+            const pointsError = validatePoints(validPoints);
+            if (pointsError) {
+                showError(new Error(pointsError), true);
+                return;
+            }
+
+            // Save to backend
+            const created = await postJson<{ summary: { id: number; name: string } }>(
+                '/api/v1/functions/tabulated/manual',
+                {
+                    name: name.trim(),
+                    points: validPoints,
+                }
+            );
+
+            if (!created || !created.summary) {
+                throw new Error('Не удалось сохранить функцию');
+            }
+
+            showSuccess(`Функция "${created.summary.name}" успешно создана (ID: ${created.summary.id})`);
+        } catch (e) {
+            showError(e instanceof Error ? e : new Error(String(e)), true);
         }
     };
 
     return (
         <>
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
+            <FunctionListModal
+                isOpen={showFunctionList}
+                onClose={() => setShowFunctionList(false)}
+                onSelect={handleFunctionSelect}
+                filterType="TABULATED"
             />
             <Modal isOpen={isOpen} onClose={onClose} title="Дифференцирование">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -271,18 +248,7 @@ export function DifferentiationModal({ isOpen, onClose, factoryKey }: Differenti
                         />
                         <div style={{ marginTop: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                             <button
-                                onClick={handleCreate}
-                                style={{
-                                    padding: '5px 10px',
-                                    background: 'var(--btn2-bg)',
-                                    color: 'var(--btn2-text)',
-                                    border: '1px solid var(--border)',
-                                }}
-                            >
-                                Создать
-                            </button>
-                            <button
-                                onClick={handleLoad}
+                                onClick={handleLoadClick}
                                 style={{
                                     padding: '5px 10px',
                                     background: 'var(--btn2-bg)',
@@ -291,17 +257,6 @@ export function DifferentiationModal({ isOpen, onClose, factoryKey }: Differenti
                                 }}
                             >
                                 Загрузить
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                style={{
-                                    padding: '5px 10px',
-                                    background: 'var(--btn2-bg)',
-                                    color: 'var(--btn2-text)',
-                                    border: '1px solid var(--border)',
-                                }}
-                            >
-                                Сохранить
                             </button>
                             {sourceFunction.length > 0 && (
                                 <button
@@ -334,6 +289,21 @@ export function DifferentiationModal({ isOpen, onClose, factoryKey }: Differenti
                     <div>
                         <h3 style={{ color: 'var(--text)' }}>Результат</h3>
                         <FunctionTable points={result} onPointsChange={() => { }} readonly={true} />
+                        {result.length > 0 && (
+                            <div style={{ marginTop: '10px' }}>
+                                <button
+                                    onClick={handleSaveResult}
+                                    style={{
+                                        padding: '8px 16px',
+                                        background: 'var(--btn-bg)',
+                                        color: 'var(--btn-text)',
+                                        border: '1px solid var(--border)',
+                                    }}
+                                >
+                                    Сохранить результат как новую функцию
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </Modal>

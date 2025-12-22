@@ -12,6 +12,7 @@ import { LoginModal } from './components/LoginModal';
 import { RegisterModal } from './components/RegisterModal';
 import { ErrorModal } from './ErrorModal';
 import { setGlobalErrorHandler } from './errorManager';
+import { clearCredentials } from './api';
 
 type ModalType = 'settings' | 'operations' | 'differentiation' | 'graph' | 'composite' | 'integration' | null;
 type AuthModalType = 'login' | 'register' | null;
@@ -32,13 +33,63 @@ export default function App() {
 
   useEffect(() => {
     setGlobalErrorHandler(setError);
-    // Check if user is authenticated (you might want to verify with backend)
-    const savedUsername = localStorage.getItem('username');
-    if (savedUsername) {
-      setUsername(savedUsername);
-      setIsAuthenticated(true);
-    }
+    verifyAuth();
+
+    // Listen for auth-required events (401 errors)
+    const handleAuthRequired = () => {
+      setIsAuthenticated(false);
+      setUsername('');
+      setAuthModal('login');
+    };
+
+    window.addEventListener('auth-required', handleAuthRequired);
+    return () => {
+      window.removeEventListener('auth-required', handleAuthRequired);
+    };
   }, []);
+
+  const verifyAuth = async () => {
+    const savedUsername = localStorage.getItem('username');
+    const savedPassword = localStorage.getItem('password');
+    
+    if (!savedUsername || !savedPassword) {
+      setIsAuthenticated(false);
+      setUsername('');
+      return;
+    }
+
+    // Verify credentials by making a test API call
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/functions?size=1`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${btoa(`${savedUsername}:${savedPassword}`)}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+        setUsername(savedUsername);
+      } else if (response.status === 401) {
+        // Credentials are invalid, clear them
+        localStorage.removeItem('username');
+        localStorage.removeItem('password');
+        setIsAuthenticated(false);
+        setUsername('');
+      } else {
+        // Other error, still try to use credentials
+        setIsAuthenticated(true);
+        setUsername(savedUsername);
+      }
+    } catch (e) {
+      // Network error or other issue - assume not authenticated
+      console.error('Auth verification failed:', e);
+      setIsAuthenticated(false);
+      setUsername('');
+    }
+  };
 
   const openModal = (modal: ModalType) => {
     if (!isAuthenticated) {
@@ -57,24 +108,17 @@ export default function App() {
     localStorage.setItem('factoryKey', newFactory);
   };
 
-  const handleLoginSuccess = () => {
-    const savedUsername = localStorage.getItem('username') || 'Пользователь';
-    setUsername(savedUsername);
-    setIsAuthenticated(true);
-    setAuthModal(null);
-  };
-  
-  // Set up Basic Auth for all requests
-  useEffect(() => {
-    const storedUsername = localStorage.getItem('username');
-    const storedPassword = localStorage.getItem('password');
-    if (storedUsername && storedPassword) {
-      // Note: In a real app, you'd use a more secure method, but for Basic Auth demo:
-      // The browser handles Basic Auth automatically on subsequent requests
-      setUsername(storedUsername);
+  const handleLoginSuccess = async () => {
+    const savedUsername = localStorage.getItem('username');
+    if (savedUsername) {
+      setUsername(savedUsername);
       setIsAuthenticated(true);
+      setAuthModal(null);
+    } else {
+      // If no credentials found, show login again
+      setAuthModal('login');
     }
-  }, []);
+  };
 
   const handleEditFunction = (id: number) => {
     if (!isAuthenticated) {
@@ -92,6 +136,13 @@ export default function App() {
     // Refresh function list will be handled by MainPage
   };
 
+  const handleLogout = () => {
+    clearCredentials();
+    setIsAuthenticated(false);
+    setUsername('');
+    setAuthModal('login');
+  };
+
   return (
     <ThemeProvider>
       <MainPage
@@ -103,6 +154,7 @@ export default function App() {
         onOpenIntegration={() => openModal('integration')}
         onEditFunction={handleEditFunction}
         onLogin={() => setAuthModal('login')}
+        onLogout={handleLogout}
         isAuthenticated={isAuthenticated}
         username={username}
       />

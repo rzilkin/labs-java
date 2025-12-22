@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { getJson, postJson } from '../api';
-import { showError } from '../errorManager';
+import { showError, showSuccess } from '../errorManager';
+import { validateFunctionName, validateComponentIds } from '../utils/validation';
 
 interface FunctionSummary {
     id: number;
@@ -51,28 +52,37 @@ export function CompositeFunctionModal({ isOpen, onClose, onCreated }: Composite
     };
 
     const handleCreate = async () => {
-        if (!name.trim()) {
-            showError(new Error('Введите имя составной функции'));
+        // Validate function name
+        const nameError = validateFunctionName(name);
+        if (nameError) {
+            showError(new Error(nameError), true);
             return;
         }
 
-        if (selectedComponents.length < 2) {
-            showError(new Error('Выберите минимум 2 функции для композиции'));
+        // Validate component IDs
+        const componentsError = validateComponentIds(selectedComponents);
+        if (componentsError) {
+            showError(new Error(componentsError), true);
             return;
         }
 
         try {
-            await postJson('/api/v1/functions/composite', {
+            const created = await postJson<{ summary: { id: number; name: string } }>('/api/v1/functions/composite', {
                 name: name.trim(),
                 componentIds: selectedComponents,
             });
 
+            if (!created || !created.summary) {
+                throw new Error('Не удалось создать составную функцию');
+            }
+
+            showSuccess(`Составная функция "${created.summary.name}" успешно создана`);
             onCreated();
             setName('');
             setSelectedComponents([]);
             onClose();
         } catch (e) {
-            showError(e);
+            showError(e, true);
         }
     };
 

@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { FunctionTable } from './FunctionTable';
 import { getJson, putJson, deleteRequest, postJson } from '../api';
-import { showError } from '../errorManager';
+import { showError, showSuccess } from '../errorManager';
+import { validateFunctionName, validatePoints } from '../utils/validation';
 
 interface Point {
     x: number;
-    y: number;
+    y: number | null;
 }
 
 interface FunctionFull {
@@ -49,12 +50,17 @@ export function FunctionEditModal({
         try {
             setLoading(true);
             const data = await getJson<FunctionFull>(`/api/v1/functions/${functionId}`);
+            
+            if (!data || !data.summary) {
+                throw new Error('Не удалось загрузить данные функции');
+            }
+            
             setFunctionData(data);
             setPoints(data.points || []);
             setNewName(data.summary.name);
             setEditingName(false);
         } catch (e) {
-            showError(e);
+            showError(e, true);
             onClose();
         } finally {
             setLoading(false);
@@ -62,8 +68,14 @@ export function FunctionEditModal({
     };
 
     const handleRename = async () => {
-        if (!functionData || !newName.trim()) {
-            showError(new Error('Имя функции не может быть пустым'));
+        if (!functionData) {
+            showError(new Error('Данные функции не загружены'), true);
+            return;
+        }
+
+        const nameError = validateFunctionName(newName);
+        if (nameError) {
+            showError(new Error(nameError), true);
             return;
         }
 
@@ -71,27 +83,34 @@ export function FunctionEditModal({
             await putJson(`/api/v1/functions/${functionId}/name`, { name: newName.trim() });
             setFunctionData({ ...functionData, summary: { ...functionData.summary, name: newName.trim() } });
             setEditingName(false);
+            showSuccess('Имя функции успешно изменено');
             onFunctionUpdated();
         } catch (e) {
-            showError(e);
+            showError(e, true);
         }
     };
 
     const handleSavePoints = async () => {
-        if (!functionData) return;
-
-        // Validate points
-        if (points.length < 2) {
-            showError(new Error('Функция должна содержать минимум 2 точки'));
+        if (!functionData) {
+            showError(new Error('Данные функции не загружены'), true);
             return;
         }
 
-        // Check if x values are sorted
-        for (let i = 1; i < points.length; i++) {
-            if (points[i].x <= points[i - 1].x) {
-                showError(new Error('Значения x должны быть строго возрастающими'));
-                return;
-            }
+        // Filter out points with null y values and convert to valid points
+        const validPoints = points
+            .filter(p => p.y !== null && p.y !== undefined && !isNaN(p.y))
+            .map(p => ({ x: p.x, y: p.y as number }));
+
+        if (validPoints.length < 2) {
+            showError(new Error('Необходимо заполнить минимум 2 точки с валидными значениями y'), true);
+            return;
+        }
+
+        // Validate points using utility
+        const pointsError = validatePoints(validPoints);
+        if (pointsError) {
+            showError(new Error(pointsError), true);
+            return;
         }
 
         try {
@@ -102,41 +121,52 @@ export function FunctionEditModal({
             // Create new one with updated points
             const created = await postJson<FunctionFull>('/api/v1/functions/tabulated/manual', {
                 name: functionData.summary.name,
-                points: points,
+                points: validPoints,
             });
             
+            if (!created || !created.summary) {
+                throw new Error('Не удалось обновить функцию');
+            }
+            
             setFunctionData(created);
+            showSuccess('Точки функции успешно обновлены');
             onFunctionUpdated();
         } catch (e) {
-            showError(e);
+            showError(e, true);
             // Reload function on error to revert changes
             loadFunction();
         }
     };
 
     const handleDelete = async () => {
-        if (!confirm(`Вы уверены, что хотите удалить функцию "${functionData?.summary.name}"?`)) {
+        if (!functionData) {
+            showError(new Error('Данные функции не загружены'), true);
+            return;
+        }
+
+        if (!confirm(`Вы уверены, что хотите удалить функцию "${functionData.summary.name}"?`)) {
             return;
         }
 
         try {
             await deleteRequest(`/api/v1/functions/${functionId}`);
+            showSuccess(`Функция "${functionData.summary.name}" успешно удалена`);
             onFunctionDeleted();
             onClose();
         } catch (e) {
-            showError(e);
+            showError(e, true);
         }
     };
 
     const handleAddPoint = () => {
         if (points.length === 0) {
-            setPoints([{ x: 0, y: 0 }]);
+            setPoints([{ x: 0, y: null }]);
             return;
         }
 
         // Add a point after the last one
         const lastPoint = points[points.length - 1];
-        const newPoint: Point = { x: lastPoint.x + 1, y: 0 };
+        const newPoint: Point = { x: lastPoint.x + 1, y: null };
         setPoints([...points, newPoint]);
     };
 
@@ -145,7 +175,8 @@ export function FunctionEditModal({
             showError(new Error('Функция должна содержать минимум 2 точки'));
             return;
         }
-        if (confirm(`Удалить точку с x=${points[index].x}, y=${points[index].y}?`)) {
+        const yValue = points[index].y ?? 'не задано';
+        if (confirm(`Удалить точку с x=${points[index].x}, y=${yValue}?`)) {
             const newPoints = points.filter((_, i) => i !== index);
             setPoints(newPoints);
         }

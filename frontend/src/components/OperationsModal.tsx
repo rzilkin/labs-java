@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { FunctionTable } from './FunctionTable';
-import { CreateFromArrayModal } from './CreateFromArrayModal';
-import { CreateFromFunctionModal } from './CreateFromFunctionModal';
-import { postJson } from '../api';
+import { FunctionListModal } from './FunctionListModal';
+import { getJson, postJson } from '../api';
+import { showError, showSuccess } from '../errorManager';
+import { validatePoints, validateFunctionName } from '../utils/validation';
 
 interface Point {
     x: number;
-    y: number;
+    y: number | null;
 }
 
 interface FunctionData {
@@ -25,85 +26,42 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
     const [leftOperand, setLeftOperand] = useState<FunctionData | null>(null);
     const [rightOperand, setRightOperand] = useState<FunctionData | null>(null);
     const [result, setResult] = useState<Point[]>([]);
+    const [showFunctionList, setShowFunctionList] = useState<'left' | 'right' | null>(null);
 
-    const [showCreateArray, setShowCreateArray] = useState<'left' | 'right' | null>(null);
-    const [showCreateFunction, setShowCreateFunction] = useState<'left' | 'right' | null>(null);
-
-    const handleCreateFromArray = (operand: 'left' | 'right') => {
-        setShowCreateArray(operand);
+    const handleLoadClick = (operand: 'left' | 'right') => {
+        setShowFunctionList(operand);
     };
 
-    const handleCreateFromFunction = (operand: 'left' | 'right') => {
-        setShowCreateFunction(operand);
-    };
+    const handleFunctionSelect = async (functionId: number) => {
+        const operand = showFunctionList;
+        if (!operand) return;
 
-    const handleCreated = (operand: 'left' | 'right', functionId: number, points: Point[]) => {
-        const funcData: FunctionData = { id: functionId, points };
-        if (operand === 'left') {
-            setLeftOperand(funcData);
-        } else {
-            setRightOperand(funcData);
-        }
-        setShowCreateArray(null);
-        setShowCreateFunction(null);
-    };
-
-    const handleLoad = async (operand: 'left' | 'right') => {
         try {
-            const input = prompt('Введите ID функции для загрузки:');
-            if (!input) return;
-            const id = Number(input);
-            if (isNaN(id)) {
-                alert('Неверный ID функции');
+            const data = await getJson<{ summary: { id: number }; points: Point[] }>(`/api/v1/functions/${functionId}`);
+
+            if (!data.points || !Array.isArray(data.points)) {
+                showError(new Error('Функция не является табулированной'), true);
                 return;
             }
 
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/functions/${id}`);
-            if (!response.ok) {
-                throw new Error('Не удалось загрузить функцию');
-            }
-            const data = await response.json();
+            const points: Point[] = data.points.map((p: { x: number; y: number | null }) => ({
+                x: p.x,
+                y: p.y ?? null,
+            }));
 
-            if (data.points && Array.isArray(data.points)) {
-                const points: Point[] = data.points.map((p: { x: number; y: number }) => ({
-                    x: p.x,
-                    y: p.y,
-                }));
-                const funcData: FunctionData = { id: data.summary.id, points };
-                if (operand === 'left') {
-                    setLeftOperand(funcData);
-                } else {
-                    setRightOperand(funcData);
-                }
+            const funcData: FunctionData = { id: data.summary.id, points };
+            if (operand === 'left') {
+                setLeftOperand(funcData);
             } else {
-                alert('Функция не является табулированной');
+                setRightOperand(funcData);
             }
+            // Clear result when loading new operand
+            setResult([]);
         } catch (e) {
-            alert(e instanceof Error ? e.message : String(e));
+            showError(e, true);
         }
     };
 
-    const handleSave = async (operand: 'left' | 'right') => {
-        try {
-            const funcData = operand === 'left' ? leftOperand : rightOperand;
-            if (!funcData) {
-                alert('Нет функции для сохранения');
-                return;
-            }
-
-            const name = prompt('Введите имя для сохранения функции:');
-            if (!name) return;
-
-            const payload = { name, points: funcData.points };
-            const result = await postJson<{ summary: { id: number } }>(
-                '/api/v1/functions/tabulated/manual',
-                payload
-            );
-            alert(`Функция сохранена с ID: ${result.summary.id}`);
-        } catch (e) {
-            alert(e instanceof Error ? e.message : String(e));
-        }
-    };
 
     const handlePointsChange = (operand: 'left' | 'right', newPoints: Point[]) => {
         const funcData = operand === 'left' ? leftOperand : rightOperand;
@@ -126,7 +84,7 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
     const handleInsertPoint = (operand: 'left' | 'right') => {
         const funcData = operand === 'left' ? leftOperand : rightOperand;
         if (!funcData) {
-            alert('Нет функции для вставки точки');
+            showError(new Error('Нет функции для вставки точки'), true);
             return;
         }
 
@@ -134,7 +92,7 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
         if (!xStr) return;
         const x = parseFloat(xStr);
         if (isNaN(x)) {
-            alert('x должно быть числом');
+            showError(new Error('x должно быть числом'), true);
             return;
         }
 
@@ -142,12 +100,12 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
         if (!yStr) return;
         const y = parseFloat(yStr);
         if (isNaN(y)) {
-            alert('y должно быть числом');
+            showError(new Error('y должно быть числом'), true);
             return;
         }
 
         // Insert point maintaining sorted order
-        const newPoint: Point = { x, y };
+        const newPoint: Point = { x, y: y ?? null };
         const newPoints = [...funcData.points, newPoint].sort((a, b) => a.x - b.x);
 
         const updatedFuncData = { ...funcData, points: newPoints };
@@ -163,7 +121,7 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
         if (!funcData) return;
 
         if (funcData.points.length <= 2) {
-            alert('Функция должна содержать минимум 2 точки');
+            showError(new Error('Функция должна содержать минимум 2 точки'), true);
             return;
         }
 
@@ -178,80 +136,6 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
         }
     };
 
-    const handleSaveJSON = (operand: 'left' | 'right') => {
-        const funcData = operand === 'left' ? leftOperand : rightOperand;
-        if (!funcData) {
-            alert('Нет функции для сохранения');
-            return;
-        }
-
-        try {
-            const name = prompt('Введите имя файла:');
-            if (!name) return;
-
-            const data = {
-                name: `function_${operand}`,
-                type: 'TABULATED',
-                points: funcData.points,
-            };
-
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (e) {
-            alert(e instanceof Error ? e.message : String(e));
-        }
-    };
-
-    const handleLoadJSON = async (operand: 'left' | 'right') => {
-        try {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = async (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (!file) return;
-
-                try {
-                    const text = await file.text();
-                    const data = JSON.parse(text);
-
-                    if (!data || !Array.isArray(data.points)) {
-                        throw new Error('Неверный формат файла');
-                    }
-
-                    const points: Point[] = data.points.map((p: any) => ({
-                        x: p.x,
-                        y: p.y,
-                    }));
-
-                    if (points.length < 2) {
-                        throw new Error('Функция должна содержать минимум 2 точки');
-                    }
-
-                    // Create a temporary ID for loaded function
-                    const funcData: FunctionData = { id: 0, points };
-                    if (operand === 'left') {
-                        setLeftOperand(funcData);
-                    } else {
-                        setRightOperand(funcData);
-                    }
-                } catch (e) {
-                    alert(e instanceof Error ? e.message : String(e));
-                }
-            };
-            input.click();
-        } catch (e) {
-            alert(e instanceof Error ? e.message : String(e));
-        }
-    };
 
     // Check if function supports insert/remove (tabulated functions typically do)
     const isInsertable = (operand: 'left' | 'right') => {
@@ -264,52 +148,152 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
         return funcData !== null && funcData.points.length > 2;
     };
 
-    const handleOperation = async (operation: '+' | '-' | '×' | '÷') => {
+    const handleOperation = (operation: '+' | '-' | '×' | '÷') => {
         try {
             if (!leftOperand || !rightOperand) {
-                alert('Необходимо загрузить оба операнда');
+                showError(new Error('Необходимо загрузить оба операнда'), true);
+                return;
+            }
+
+            // Filter out null y values for validation
+            const leftValidPoints = leftOperand.points.filter(p => p.y !== null && p.y !== undefined) as Array<{ x: number; y: number }>;
+            const rightValidPoints = rightOperand.points.filter(p => p.y !== null && p.y !== undefined) as Array<{ x: number; y: number }>;
+
+            // Validate points
+            const leftPointsError = validatePoints(leftValidPoints);
+            if (leftPointsError) {
+                showError(new Error(`Левый операнд: ${leftPointsError}`), true);
+                return;
+            }
+
+            const rightPointsError = validatePoints(rightValidPoints);
+            if (rightPointsError) {
+                showError(new Error(`Правый операнд: ${rightPointsError}`), true);
                 return;
             }
 
             if (leftOperand.points.length !== rightOperand.points.length) {
-                alert('Функции должны иметь одинаковое количество точек');
+                showError(new Error('Функции должны иметь одинаковое количество точек'), true);
                 return;
             }
 
             // Check if X values match
             for (let i = 0; i < leftOperand.points.length; i++) {
                 if (Math.abs(leftOperand.points[i].x - rightOperand.points[i].x) > 1e-9) {
-                    alert('X значения функций не совпадают');
+                    showError(new Error('X значения функций не совпадают'), true);
                     return;
                 }
             }
 
-            const opMap: Record<string, string> = {
-                '+': 'sum',
-                '-': 'subtract',
-                '×': 'multiplication',
-                '÷': 'division',
-            };
+            // Compute operation locally
+            const computedPoints: Point[] = leftOperand.points.map((leftPoint, i) => {
+                const rightPoint = rightOperand.points[i];
 
-            const op = opMap[operation];
-            const payload = {
-                leftId: leftOperand.id,
-                rightId: rightOperand.id,
-            };
+                // Skip if either point has null y
+                if (leftPoint.y === null || rightPoint.y === null) {
+                    return {
+                        x: leftPoint.x,
+                        y: null,
+                    };
+                }
 
-            const resultData = await postJson<{ summary: { id: number }; points: Point[] }>(
-                `/api/v1/operations/${op}`,
-                payload
+                let y: number;
+
+                switch (operation) {
+                    case '+':
+                        y = leftPoint.y + rightPoint.y;
+                        break;
+                    case '-':
+                        y = leftPoint.y - rightPoint.y;
+                        break;
+                    case '×':
+                        y = leftPoint.y * rightPoint.y;
+                        break;
+                    case '÷':
+                        if (Math.abs(rightPoint.y) < 1e-10) {
+                            throw new Error(`Деление на ноль в точке x=${rightPoint.x}`);
+                        }
+                        y = leftPoint.y / rightPoint.y;
+                        break;
+                    default:
+                        throw new Error(`Неизвестная операция: ${operation}`);
+                }
+
+                return {
+                    x: leftPoint.x,
+                    y: y,
+                };
+            });
+
+            setResult(computedPoints);
+        } catch (e) {
+            showError(e instanceof Error ? e : new Error(String(e)), true);
+        }
+    };
+
+    const handleSaveResult = async () => {
+        if (result.length === 0) {
+            showError(new Error('Нет результата для сохранения'), true);
+            return;
+        }
+
+        try {
+            const name = prompt('Введите имя для новой функции:');
+            if (!name) return;
+
+            // Validate name
+            const nameError = validateFunctionName(name);
+            if (nameError) {
+                showError(new Error(nameError), true);
+                return;
+            }
+
+            // Filter out null y values and convert to valid points
+            const validPoints = result
+                .filter(p => p.y !== null && p.y !== undefined && !isNaN(p.y as number))
+                .map(p => ({ x: p.x, y: p.y as number }));
+
+            if (validPoints.length < 2) {
+                showError(new Error('Результат должен содержать минимум 2 валидные точки'), true);
+                return;
+            }
+
+            // Validate points
+            const pointsError = validatePoints(validPoints);
+            if (pointsError) {
+                showError(new Error(pointsError), true);
+                return;
+            }
+
+            // Save to backend
+            const created = await postJson<{ summary: { id: number; name: string } }>(
+                '/api/v1/functions/tabulated/manual',
+                {
+                    name: name.trim(),
+                    points: validPoints,
+                }
             );
 
-            setResult(resultData.points || []);
+            if (!created || !created.summary) {
+                throw new Error('Не удалось сохранить функцию');
+            }
+
+            showSuccess(`Функция "${created.summary.name}" успешно создана (ID: ${created.summary.id})`);
+            // Optionally close modal or keep it open
+            // onClose();
         } catch (e) {
-            alert(e instanceof Error ? e.message : String(e));
+            showError(e instanceof Error ? e : new Error(String(e)), true);
         }
     };
 
     return (
         <>
+            <FunctionListModal
+                isOpen={showFunctionList !== null}
+                onClose={() => setShowFunctionList(null)}
+                onSelect={handleFunctionSelect}
+                filterType="TABULATED"
+            />
             <Modal isOpen={isOpen} onClose={onClose} title="Поэлементные операции">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {/* Left Operand */}
@@ -322,23 +306,8 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
                             onRemovePoint={isRemovable('left') ? (index) => handleRemovePoint('left', index) : undefined}
                         />
                         <div style={{ marginTop: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                            <button onClick={() => handleCreateFromArray('left')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Создать из массива
-                            </button>
-                            <button onClick={() => handleCreateFromFunction('left')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Создать из другой функции
-                            </button>
-                            <button onClick={() => handleLoad('left')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
+                            <button onClick={() => handleLoadClick('left')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
                                 Загрузить
-                            </button>
-                            <button onClick={() => handleLoadJSON('left')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Загрузить JSON
-                            </button>
-                            <button onClick={() => handleSave('left')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Сохранить в БД
-                            </button>
-                            <button onClick={() => handleSaveJSON('left')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Сохранить JSON
                             </button>
                             {isInsertable('left') && (
                                 <button onClick={() => handleInsertPoint('left')} style={{ padding: '5px 10px', background: 'var(--btn-bg)', color: 'var(--btn-text)', border: '1px solid var(--border)' }}>
@@ -358,23 +327,8 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
                             onRemovePoint={isRemovable('right') ? (index) => handleRemovePoint('right', index) : undefined}
                         />
                         <div style={{ marginTop: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                            <button onClick={() => handleCreateFromArray('right')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Создать из массива
-                            </button>
-                            <button onClick={() => handleCreateFromFunction('right')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Создать из другой функции
-                            </button>
-                            <button onClick={() => handleLoad('right')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
+                            <button onClick={() => handleLoadClick('right')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
                                 Загрузить
-                            </button>
-                            <button onClick={() => handleLoadJSON('right')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Загрузить JSON
-                            </button>
-                            <button onClick={() => handleSave('right')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Сохранить в БД
-                            </button>
-                            <button onClick={() => handleSaveJSON('right')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
-                                Сохранить JSON
                             </button>
                             {isInsertable('right') && (
                                 <button onClick={() => handleInsertPoint('right')} style={{ padding: '5px 10px', background: 'var(--btn-bg)', color: 'var(--btn-text)', border: '1px solid var(--border)' }}>
@@ -384,11 +338,10 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
                         </div>
                     </div>
 
-                    {/* Result */}
+                    {/* Operations */}
                     <div>
-                        <h3 style={{ color: 'var(--text)' }}>Результат</h3>
-                        <FunctionTable points={result} onPointsChange={() => { }} readonly={true} />
-                        <div style={{ marginTop: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                        <h3 style={{ color: 'var(--text)' }}>Операции</h3>
+                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '20px' }}>
                             <button onClick={() => handleOperation('+')} style={{ padding: '5px 10px', background: 'var(--btn2-bg)', color: 'var(--btn2-text)', border: '1px solid var(--border)' }}>
                                 +
                             </button>
@@ -403,33 +356,29 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
                             </button>
                         </div>
                     </div>
+
+                    {/* Result */}
+                    <div>
+                        <h3 style={{ color: 'var(--text)' }}>Результат</h3>
+                        <FunctionTable points={result} onPointsChange={() => { }} readonly={true} />
+                        {result.length > 0 && (
+                            <div style={{ marginTop: '10px' }}>
+                                <button
+                                    onClick={handleSaveResult}
+                                    style={{
+                                        padding: '8px 16px',
+                                        background: 'var(--btn-bg)',
+                                        color: 'var(--btn-text)',
+                                        border: '1px solid var(--border)',
+                                    }}
+                                >
+                                    Сохранить результат как новую функцию
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </Modal>
-
-            <CreateFromArrayModal
-                isOpen={showCreateArray === 'left'}
-                onClose={() => setShowCreateArray(null)}
-                onCreated={(id, points) => handleCreated('left', id, points)}
-                factoryKey={factoryKey}
-            />
-            <CreateFromArrayModal
-                isOpen={showCreateArray === 'right'}
-                onClose={() => setShowCreateArray(null)}
-                onCreated={(id, points) => handleCreated('right', id, points)}
-                factoryKey={factoryKey}
-            />
-            <CreateFromFunctionModal
-                isOpen={showCreateFunction === 'left'}
-                onClose={() => setShowCreateFunction(null)}
-                onCreated={(id, points) => handleCreated('left', id, points)}
-                factoryKey={factoryKey}
-            />
-            <CreateFromFunctionModal
-                isOpen={showCreateFunction === 'right'}
-                onClose={() => setShowCreateFunction(null)}
-                onCreated={(id, points) => handleCreated('right', id, points)}
-                factoryKey={factoryKey}
-            />
         </>
     );
 }
