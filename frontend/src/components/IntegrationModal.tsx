@@ -26,6 +26,12 @@ export function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
     useEffect(() => {
         if (isOpen) {
             loadFunctions();
+        } else {
+            // Сброс состояния при закрытии модального окна
+            setSelectedFunctionId(null);
+            setThreads('8');
+            setResult(null);
+            setFunctions([]);
         }
     }, [isOpen]);
 

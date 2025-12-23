@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Modal } from './Modal';
 import { getJson } from '../api';
 import { showError } from '../errorManager';
-import { validateNumber, validateRange, validatePointCount } from '../utils/validation';
+import { validateNumber, validateRange } from '../utils/validation';
 
 interface Point {
     x: number;
@@ -31,27 +31,40 @@ interface FunctionGraphModalProps {
     onClose: () => void;
 }
 
+// Cache for loaded component functions (to avoid re-fetching)
+const componentCache = new Map<number, FunctionFull>();
+
 export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps) {
     const [functions, setFunctions] = useState<FunctionSummary[]>([]);
     const [selectedFunctionId, setSelectedFunctionId] = useState<number | null>(null);
     const [functionData, setFunctionData] = useState<FunctionFull | null>(null);
     const [graphPoints, setGraphPoints] = useState<Point[]>([]);
     const [loading, setLoading] = useState(false);
-    
-    // Graph parameters
+    const [compositeLoading, setCompositeLoading] = useState(false);
+
+    // Graph parameters for ANALYTIC and COMPOSITE functions
     const [xFrom, setXFrom] = useState('-10');
     const [xTo, setXTo] = useState('10');
-    const [numPoints, setNumPoints] = useState('100');
-    
+
     // Value calculation
     const [xValue, setXValue] = useState('');
     const [calculatedValue, setCalculatedValue] = useState<number | null>(null);
-    
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
         if (isOpen) {
             loadFunctions();
+        } else {
+            // Сброс состояния при закрытии модального окна
+            setFunctions([]);
+            setSelectedFunctionId(null);
+            setFunctionData(null);
+            setGraphPoints([]);
+            setXFrom('-10');
+            setXTo('10');
+            setXValue('');
+            setCalculatedValue(null);
         }
     }, [isOpen]);
 
@@ -82,8 +95,13 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
             setLoading(true);
             const data = await getJson<FunctionFull>(`/api/v1/functions/${selectedFunctionId}`);
             setFunctionData(data);
-            // Generate initial graph points
-            updateGraph(data);
+
+            // For TABULATED functions, immediately display existing points
+            if (data.summary.type === 'TABULATED' && data.points && data.points.length > 0) {
+                setGraphPoints(data.points);
+            } else {
+                setGraphPoints([]);
+            }
         } catch (e) {
             showError(e);
         } finally {
@@ -91,18 +109,30 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
         }
     };
 
+    // Cotangent function: ctg(x) = 1/tan(x)
+    const ctg = (x: number): number => {
+        const tanVal = Math.tan(x);
+        if (Math.abs(tanVal) < 1e-15) {
+            return NaN; // tan(x) = 0 означает ctg не определен
+        }
+        return 1.0 / tanVal;
+    };
+
     // Safe expression evaluator for ANALYTIC functions
     const safeEval = (expression: string, x: number): number => {
         try {
             // Replace x with the actual value
             let expr = expression.replace(/x/g, `(${x})`);
-            
-            // Support common math functions
+
+            // Support common math functions including cotangent
             const mathContext: { [key: string]: any } = {
                 Math: Math,
                 sin: Math.sin,
                 cos: Math.cos,
                 tan: Math.tan,
+                tg: Math.tan,     // Альтернативное название для tan
+                ctg: ctg,         // Котангенс
+                cot: ctg,         // Альтернативное название для ctg
                 asin: Math.asin,
                 acos: Math.acos,
                 atan: Math.atan,
@@ -122,12 +152,253 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
             // Create a safe evaluation function
             // Replace ^ with ** for exponentiation
             expr = expr.replace(/\^/g, '**');
-            
+
             // Use Function constructor with limited scope
             const func = new Function(...Object.keys(mathContext), `return ${expr}`);
             return func(...Object.values(mathContext));
         } catch (e) {
             throw new Error(`Ошибка вычисления выражения: ${e instanceof Error ? e.message : String(e)}`);
+        }
+    };
+
+    // Определение, содержит ли выражение функции с ограниченной областью определения
+    const detectRestrictedFunction = (expression: string | undefined): 'tan' | 'ctg' | null => {
+        if (!expression) return null;
+        const lowerExpr = expression.toLowerCase();
+        // Проверяем ctg/cot первым, так как они более специфичны
+        if (/\b(ctg|cot)\s*\(/.test(lowerExpr)) {
+            return 'ctg';
+        }
+        // Проверяем tan/tg
+        if (/\b(tan|tg)\s*\(/.test(lowerExpr)) {
+            return 'tan';
+        }
+        return null;
+    };
+
+    // Получение безопасного диапазона для функций с ограниченной областью определения
+    const getSafeRange = (restrictedFunc: 'tan' | 'ctg' | null): { from: string; to: string } | null => {
+        if (!restrictedFunc) return null;
+
+        const epsilon = 0.01;
+        const halfPi = Math.PI / 2;
+        const pi = Math.PI;
+
+        if (restrictedFunc === 'tan') {
+            // tan не определен при x = π/2 + πn
+            // Безопасный диапазон: (-π/2 + ε, π/2 - ε)
+            return {
+                from: (-halfPi + epsilon).toFixed(4),
+                to: (halfPi - epsilon).toFixed(4)
+            };
+        } else if (restrictedFunc === 'ctg') {
+            // ctg не определен при x = πn (т.е. 0, π, -π, ...)
+            // Безопасный диапазон: (ε, π - ε)
+            return {
+                from: epsilon.toFixed(4),
+                to: (pi - epsilon).toFixed(4)
+            };
+        }
+        return null;
+    };
+
+    const updateGraphForAnalytic = async () => {
+        if (!functionData || functionData.summary.type !== 'ANALYTIC') return;
+
+        try {
+            // Определяем, нужен ли безопасный диапазон для ограниченных функций
+            const restrictedFunc = detectRestrictedFunction(functionData.analyticExpression);
+            const safeRange = getSafeRange(restrictedFunc);
+
+            // Используем безопасный диапазон для ограниченных функций или пользовательский диапазон
+            const actualXFrom = (restrictedFunc && safeRange) ? safeRange.from : xFrom;
+            const actualXTo = (restrictedFunc && safeRange) ? safeRange.to : xTo;
+
+            // Validate range
+            const rangeError = validateRange(actualXFrom, actualXTo);
+            if (rangeError) {
+                showError(new Error(rangeError), true);
+                return;
+            }
+
+            const from = parseFloat(actualXFrom);
+            const to = parseFloat(actualXTo);
+
+            // Validate from >= to
+            if (from >= to) {
+                showError(new Error('Значение "x от" должно быть меньше "x до"'), true);
+                return;
+            }
+
+            setLoading(true);
+
+            // Call backend to get function with generated points
+            const response = await getJson<FunctionFull>(
+                `/api/v1/functions/${selectedFunctionId}?from=${from}&to=${to}`
+            );
+
+            // Debug logging
+            console.log('Response from server:', response);
+            console.log('Points array:', response.points);
+            console.log('Points length:', response.points?.length);
+
+            // Check if response has points array
+            if (response && Array.isArray(response.points)) {
+                if (response.points.length > 0) {
+                    // Фильтруем NaN значения для функций с ограниченной областью определения
+                    const validPoints = response.points.filter(p =>
+                        isFinite(p.x) && isFinite(p.y) && !isNaN(p.x) && !isNaN(p.y)
+                    );
+
+                    if (validPoints.length > 0) {
+                        setGraphPoints(validPoints);
+                    } else {
+                        showError(new Error('Не удалось сгенерировать точки. Проверьте выражение функции или диапазон.'), true);
+                    }
+                } else {
+                    // Backend returned empty points array (error occurred on server)
+                    showError(new Error('Не удалось сгенерировать точки. Проверьте выражение функции или диапазон.'), true);
+                }
+            } else {
+                // Response structure is invalid or points field is missing
+                console.error('Invalid response structure:', response);
+                showError(new Error('Не удалось сгенерировать точки. Проверьте выражение функции или диапазон.'), true);
+            }
+        } catch (e) {
+            console.error('Error updating graph for analytic function:', e);
+            showError(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const drawGraph = () => {
+        const canvas = canvasRef.current;
+        if (!canvas || graphPoints.length === 0) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const width = canvas.width;
+        const height = canvas.height;
+        const padding = 50;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Background
+        const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--card') || '#fff';
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, width, height);
+
+        // Find min/max values
+        const xValues = graphPoints.map(p => p.x);
+        const yValues = graphPoints.map(p => p.y);
+        const minX = Math.min(...xValues);
+        const maxX = Math.max(...xValues);
+        const minY = Math.min(...yValues);
+        const maxY = Math.max(...yValues);
+
+        const rangeX = maxX - minX || 1;
+        const rangeY = maxY - minY || 1;
+
+        // Better axis scaling with proper padding
+        const xPadding = rangeX * 0.05;
+        const yPadding = rangeY * 0.1;
+        const plotMinX = minX - xPadding;
+        const plotMaxX = maxX + xPadding;
+        const plotMinY = minY - yPadding;
+        const plotMaxY = maxY + yPadding;
+        const plotRangeX = plotMaxX - plotMinX || 1;
+        const plotRangeY = plotMaxY - plotMinY || 1;
+
+        const plotWidth = width - 2 * padding;
+        const plotHeight = height - 2 * padding;
+
+        // Draw grid
+        const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border') || '#ddd';
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 0.5;
+
+        // Vertical grid lines
+        for (let i = 0; i <= 10; i++) {
+            const x = padding + (i / 10) * plotWidth;
+            ctx.beginPath();
+            ctx.moveTo(x, padding);
+            ctx.lineTo(x, height - padding);
+            ctx.stroke();
+        }
+
+        // Horizontal grid lines
+        for (let i = 0; i <= 10; i++) {
+            const y = height - padding - (i / 10) * plotHeight;
+            ctx.beginPath();
+            ctx.moveTo(padding, y);
+            ctx.lineTo(width - padding, y);
+            ctx.stroke();
+        }
+
+        // Draw axes with proper scaling
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2;
+
+        // Y axis (x = 0 or at left edge if 0 is outside range)
+        const yAxisX = padding + ((0 - plotMinX) / plotRangeX) * plotWidth;
+        if (yAxisX >= padding && yAxisX <= width - padding) {
+            ctx.beginPath();
+            ctx.moveTo(yAxisX, padding);
+            ctx.lineTo(yAxisX, height - padding);
+            ctx.stroke();
+        }
+
+        // X axis (y = 0 or at bottom edge if 0 is outside range)
+        const xAxisY = height - padding - ((0 - plotMinY) / plotRangeY) * plotHeight;
+        if (xAxisY >= padding && xAxisY <= height - padding) {
+            ctx.beginPath();
+            ctx.moveTo(padding, xAxisY);
+            ctx.lineTo(width - padding, xAxisY);
+            ctx.stroke();
+        }
+
+        // Draw function line with proper scaling
+        const lineColor = getComputedStyle(document.documentElement).getPropertyValue('--btn-bg') || '#111';
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        let firstPoint = true;
+        for (const point of graphPoints) {
+            const x = padding + ((point.x - plotMinX) / plotRangeX) * plotWidth;
+            const y = height - padding - ((point.y - plotMinY) / plotRangeY) * plotHeight;
+
+            if (firstPoint) {
+                ctx.moveTo(x, y);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+
+        ctx.stroke();
+
+        // Draw axis labels
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#000';
+        ctx.fillStyle = textColor;
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+
+        // X axis labels with proper scaling
+        for (let i = 0; i <= 5; i++) {
+            const x = padding + (i / 5) * plotWidth;
+            const value = plotMinX + (i / 5) * plotRangeX;
+            ctx.fillText(value.toFixed(2), x, height - padding + 20);
+        }
+
+        // Y axis labels with proper scaling
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= 5; i++) {
+            const y = height - padding - (i / 5) * plotHeight;
+            const value = plotMinY + (i / 5) * plotRangeY;
+            ctx.fillText(value.toFixed(2), padding - 10, y + 4);
         }
     };
 
@@ -182,216 +453,147 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
         return sortedPoints[0].y;
     };
 
-    const updateGraph = (data: FunctionFull | null = functionData) => {
-        if (!data) {
-            setGraphPoints([]);
+    // Load a component function (with caching)
+    const loadComponentFunction = async (componentId: number): Promise<FunctionFull> => {
+        // Check cache first
+        if (componentCache.has(componentId)) {
+            return componentCache.get(componentId)!;
+        }
+
+        // Fetch from server
+        const componentData = await getJson<FunctionFull>(`/api/v1/functions/${componentId}`);
+        componentCache.set(componentId, componentData);
+        return componentData;
+    };
+
+    // Evaluate a single component function at value y
+    const evaluateComponent = (component: FunctionFull, y: number): number => {
+        if (component.summary.type === 'ANALYTIC' && component.analyticExpression) {
+            return safeEval(component.analyticExpression, y);
+        } else if (component.summary.type === 'TABULATED' && component.points && component.points.length > 0) {
+            return interpolateTabulated(y, component.points);
+        } else if (component.summary.type === 'COMPOSITE') {
+            // For nested composite, we would need to recursively evaluate
+            // For simplicity, if it has pre-computed points, use interpolation
+            if (component.points && component.points.length > 0) {
+                return interpolateTabulated(y, component.points);
+            }
+            throw new Error(`Композитная функция "${component.summary.name}" не имеет вычисленных точек`);
+        } else {
+            throw new Error(`Не удалось вычислить компонент "${component.summary.name}" типа ${component.summary.type}`);
+        }
+    };
+
+    // Generate graph for COMPOSITE function
+    const updateGraphForComposite = async () => {
+        if (!functionData || functionData.summary.type !== 'COMPOSITE') return;
+        if (!functionData.components || functionData.components.length === 0) {
+            showError(new Error('Композитная функция не содержит компонентов'), true);
             return;
         }
 
+        // Validate range
+        const rangeError = validateRange(xFrom, xTo);
+        if (rangeError) {
+            showError(new Error(rangeError), true);
+            return;
+        }
+
+        const from = parseFloat(xFrom);
+        const to = parseFloat(xTo);
+
+        if (from >= to) {
+            showError(new Error('Значение "x от" должно быть меньше "x до"'), true);
+            return;
+        }
+
+        setCompositeLoading(true);
+        setGraphPoints([]);
+
         try {
-            // Validate number of points
-            const countError = validatePointCount(numPoints);
-            if (countError) {
-                showError(new Error(countError), true);
-                return;
+            // Load all component functions
+            const componentIds = functionData.components;
+            const components: FunctionFull[] = [];
+
+            for (const componentId of componentIds) {
+                try {
+                    const component = await loadComponentFunction(componentId);
+                    components.push(component);
+                } catch (e) {
+                    throw new Error(`Не удалось загрузить компонент с ID ${componentId}: ${e instanceof Error ? e.message : String(e)}`);
+                }
             }
 
-            // Validate range
-            const rangeError = validateRange(xFrom, xTo);
-            if (rangeError) {
-                showError(new Error(rangeError), true);
-                return;
-            }
-
-            const from = parseFloat(xFrom);
-            const to = parseFloat(xTo);
-            const count = parseInt(numPoints);
-
+            // Generate 200 x values
+            const pointCount = 200;
+            const step = (to - from) / (pointCount - 1);
             const points: Point[] = [];
-            const step = (to - from) / (count - 1);
+            let errorCount = 0;
 
-            if (data.summary.type === 'ANALYTIC' && data.analyticExpression) {
-                // Generate points from analytic expression
-                for (let i = 0; i < count; i++) {
-                    const x = from + i * step;
-                    try {
-                        const y = safeEval(data.analyticExpression, x);
-                        points.push({ x, y });
-                    } catch (e) {
-                        // Skip invalid points
-                        console.warn(`Ошибка вычисления в точке x=${x}:`, e);
-                    }
-                }
-            } else if (data.summary.type === 'TABULATED' && data.points && data.points.length > 0) {
-                // Generate points using interpolation/extrapolation
-                for (let i = 0; i < count; i++) {
-                    const x = from + i * step;
-                    try {
-                        const y = interpolateTabulated(x, data.points);
-                        points.push({ x, y });
-                    } catch (e) {
-                        console.warn(`Ошибка интерполяции в точке x=${x}:`, e);
-                    }
-                }
-            } else if (data.summary.type === 'COMPOSITE') {
-                // For composite functions, we'd need to evaluate components
-                // For now, use points if available
-                if (data.points && data.points.length > 0) {
-                    for (let i = 0; i < count; i++) {
-                        const x = from + i * step;
-                        try {
-                            const y = interpolateTabulated(x, data.points);
-                            points.push({ x, y });
-                        } catch (e) {
-                            console.warn(`Ошибка интерполяции в точке x=${x}:`, e);
+            for (let i = 0; i < pointCount; i++) {
+                const x = from + i * step;
+                let y = x; // Start with y = x
+
+                try {
+                    // Apply each component function sequentially
+                    for (const component of components) {
+                        y = evaluateComponent(component, y);
+
+                        // Check for NaN or Infinity
+                        if (!isFinite(y) || isNaN(y)) {
+                            throw new Error('Результат не является конечным числом');
                         }
                     }
-                } else {
-                    showError(new Error('Составная функция не имеет точек для отображения'));
-                    return;
+
+                    points.push({ x, y });
+                } catch {
+                    // Skip points that cause errors
+                    errorCount++;
                 }
-            } else {
-                showError(new Error('Не удалось построить график для данного типа функции'));
+            }
+
+            if (points.length === 0) {
+                showError(new Error('Не удалось вычислить композитную функцию. Проверьте компоненты и диапазон.'), true);
                 return;
+            }
+
+            if (errorCount > 0) {
+                console.warn(`Пропущено ${errorCount} точек из-за ошибок вычисления`);
             }
 
             setGraphPoints(points);
         } catch (e) {
-            showError(e);
+            console.error('Ошибка вычисления композитной функции:', e);
+            showError(new Error(`Не удалось вычислить композитную функцию: ${e instanceof Error ? e.message : String(e)}`), true);
+        } finally {
+            setCompositeLoading(false);
         }
     };
 
-    const drawGraph = () => {
-        const canvas = canvasRef.current;
-        if (!canvas || graphPoints.length === 0) return;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const width = canvas.width;
-        const height = canvas.height;
-        const padding = 50;
-
-        ctx.clearRect(0, 0, width, height);
-        
-        // Background
-        const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--card') || '#fff';
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, width, height);
-
-        // Find min/max values
-        const xValues = graphPoints.map(p => p.x);
-        const yValues = graphPoints.map(p => p.y);
-        const minX = Math.min(...xValues);
-        const maxX = Math.max(...xValues);
-        const minY = Math.min(...yValues);
-        const maxY = Math.max(...yValues);
-
-        const rangeX = maxX - minX || 1;
-        const rangeY = maxY - minY || 1;
-
-        // Better axis scaling with proper padding
-        const xPadding = rangeX * 0.05;
-        const yPadding = rangeY * 0.1;
-        const plotMinX = minX - xPadding;
-        const plotMaxX = maxX + xPadding;
-        const plotMinY = minY - yPadding;
-        const plotMaxY = maxY + yPadding;
-        const plotRangeX = plotMaxX - plotMinX || 1;
-        const plotRangeY = plotMaxY - plotMinY || 1;
-
-        const plotWidth = width - 2 * padding;
-        const plotHeight = height - 2 * padding;
-
-        // Draw grid
-        const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border') || '#ddd';
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 0.5;
-        
-        // Vertical grid lines
-        for (let i = 0; i <= 10; i++) {
-            const x = padding + (i / 10) * plotWidth;
-            ctx.beginPath();
-            ctx.moveTo(x, padding);
-            ctx.lineTo(x, height - padding);
-            ctx.stroke();
+    // Calculate single value for COMPOSITE function
+    const evaluateCompositeAtX = async (x: number): Promise<number> => {
+        if (!functionData || functionData.summary.type !== 'COMPOSITE') {
+            throw new Error('Функция не является композитной');
         }
-        
-        // Horizontal grid lines
-        for (let i = 0; i <= 10; i++) {
-            const y = height - padding - (i / 10) * plotHeight;
-            ctx.beginPath();
-            ctx.moveTo(padding, y);
-            ctx.lineTo(width - padding, y);
-            ctx.stroke();
+        if (!functionData.components || functionData.components.length === 0) {
+            throw new Error('Композитная функция не содержит компонентов');
         }
 
-        // Draw axes with proper scaling
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 2;
-        
-        // Y axis (x = 0 or at left edge if 0 is outside range)
-        const yAxisX = padding + ((0 - plotMinX) / plotRangeX) * plotWidth;
-        if (yAxisX >= padding && yAxisX <= width - padding) {
-            ctx.beginPath();
-            ctx.moveTo(yAxisX, padding);
-            ctx.lineTo(yAxisX, height - padding);
-            ctx.stroke();
-        }
-        
-        // X axis (y = 0 or at bottom edge if 0 is outside range)
-        const xAxisY = height - padding - ((0 - plotMinY) / plotRangeY) * plotHeight;
-        if (xAxisY >= padding && xAxisY <= height - padding) {
-            ctx.beginPath();
-            ctx.moveTo(padding, xAxisY);
-            ctx.lineTo(width - padding, xAxisY);
-            ctx.stroke();
-        }
+        let y = x;
 
-        // Draw function line with proper scaling
-        const lineColor = getComputedStyle(document.documentElement).getPropertyValue('--btn-bg') || '#111';
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
+        for (const componentId of functionData.components) {
+            const component = await loadComponentFunction(componentId);
+            y = evaluateComponent(component, y);
 
-        let firstPoint = true;
-        for (const point of graphPoints) {
-            const x = padding + ((point.x - plotMinX) / plotRangeX) * plotWidth;
-            const y = height - padding - ((point.y - plotMinY) / plotRangeY) * plotHeight;
-
-            if (firstPoint) {
-                ctx.moveTo(x, y);
-                firstPoint = false;
-            } else {
-                ctx.lineTo(x, y);
+            if (!isFinite(y) || isNaN(y)) {
+                throw new Error('Результат не является конечным числом');
             }
         }
 
-        ctx.stroke();
-
-        // Draw axis labels
-        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#000';
-        ctx.fillStyle = textColor;
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'center';
-        
-        // X axis labels with proper scaling
-        for (let i = 0; i <= 5; i++) {
-            const x = padding + (i / 5) * plotWidth;
-            const value = plotMinX + (i / 5) * plotRangeX;
-            ctx.fillText(value.toFixed(2), x, height - padding + 20);
-        }
-        
-        // Y axis labels with proper scaling
-        ctx.textAlign = 'right';
-        for (let i = 0; i <= 5; i++) {
-            const y = height - padding - (i / 5) * plotHeight;
-            const value = plotMinY + (i / 5) * plotRangeY;
-            ctx.fillText(value.toFixed(2), padding - 10, y + 4);
-        }
+        return y;
     };
 
-    const handleCalculateValue = () => {
+    const handleCalculateValue = async () => {
         if (!functionData) {
             showError(new Error('Выберите функцию'), true);
             return;
@@ -417,10 +619,22 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
                 result = safeEval(functionData.analyticExpression, x);
             } else if (functionData.summary.type === 'TABULATED' && functionData.points) {
                 result = interpolateTabulated(x, functionData.points);
-            } else if (functionData.summary.type === 'COMPOSITE' && functionData.points) {
-                result = interpolateTabulated(x, functionData.points);
+            } else if (functionData.summary.type === 'COMPOSITE') {
+                // For COMPOSITE: if we have pre-computed points, use interpolation
+                // Otherwise, compute through component chain
+                if (graphPoints.length > 0) {
+                    result = interpolateTabulated(x, graphPoints);
+                } else {
+                    // Evaluate through components
+                    setLoading(true);
+                    try {
+                        result = await evaluateCompositeAtX(x);
+                    } finally {
+                        setLoading(false);
+                    }
+                }
             } else {
-                showError(new Error('Не удалось вычислить значение для данного типа функции'));
+                showError(new Error('Не удалось вычислить значение для данного типа функции'), true);
                 return;
             }
 
@@ -429,6 +643,16 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
             showError(e);
             setCalculatedValue(null);
         }
+    };
+
+    const getDomainDisplay = () => {
+        if (!functionData || !functionData.points || functionData.points.length === 0) return null;
+
+        const xValues = functionData.points.map(p => p.x);
+        const minX = Math.min(...xValues);
+        const maxX = Math.max(...xValues);
+
+        return `Область: [${minX.toFixed(2)} .. ${maxX.toFixed(2)}]`;
     };
 
     return (
@@ -464,11 +688,130 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
                     )}
                 </div>
 
-                {/* Graph Parameters */}
-                {functionData && (
+                {/* Graph Parameters - Only for ANALYTIC functions */}
+                {functionData && functionData.summary.type === 'ANALYTIC' && (() => {
+                    const restrictedFunc = detectRestrictedFunction(functionData.analyticExpression);
+                    const safeRange = getSafeRange(restrictedFunc);
+
+                    return (
+                        <div>
+                            <h3 style={{ color: 'var(--text)', marginTop: 0, marginBottom: '15px' }}>Параметры графика</h3>
+
+                            {/* Предупреждение для функций с ограниченной областью определения */}
+                            {restrictedFunc && (
+                                <div style={{
+                                    padding: '12px',
+                                    marginBottom: '15px',
+                                    background: 'rgba(255, 193, 7, 0.1)',
+                                    border: '1px solid rgba(255, 193, 7, 0.5)',
+                                    borderRadius: '4px',
+                                    color: 'var(--text)',
+                                    fontSize: '14px'
+                                }}>
+                                    ⚠️ Диапазон ограничен областью определения функции {restrictedFunc === 'tan' ? 'tan' : 'ctg'}.
+                                    <br />
+                                    <span style={{ color: 'var(--muted)', fontSize: '12px' }}>
+                                        {restrictedFunc === 'tan'
+                                            ? 'tan(x) не определён при x = π/2 + πn'
+                                            : 'ctg(x) не определён при x = πn (0, ±π, ±2π, ...)'
+                                        }
+                                    </span>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
+                                <div>
+                                    <label style={{ color: 'var(--text)', display: 'block', marginBottom: '8px', fontSize: '14px' }}>
+                                        x от:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={restrictedFunc && safeRange ? safeRange.from : xFrom}
+                                        onChange={(e) => !restrictedFunc && setXFrom(e.target.value)}
+                                        disabled={!!restrictedFunc}
+                                        step="any"
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px',
+                                            background: restrictedFunc ? 'var(--muted)' : 'var(--input-bg)',
+                                            color: 'var(--input-text)',
+                                            border: '1px solid var(--border)',
+                                            opacity: restrictedFunc ? 0.7 : 1
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ color: 'var(--text)', display: 'block', marginBottom: '8px', fontSize: '14px' }}>
+                                        x до:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={restrictedFunc && safeRange ? safeRange.to : xTo}
+                                        onChange={(e) => !restrictedFunc && setXTo(e.target.value)}
+                                        disabled={!!restrictedFunc}
+                                        step="any"
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px',
+                                            background: restrictedFunc ? 'var(--muted)' : 'var(--input-bg)',
+                                            color: 'var(--input-text)',
+                                            border: '1px solid var(--border)',
+                                            opacity: restrictedFunc ? 0.7 : 1
+                                        }}
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        // Для ограниченных функций используем безопасный диапазон
+                                        if (restrictedFunc && safeRange) {
+                                            setXFrom(safeRange.from);
+                                            setXTo(safeRange.to);
+                                        }
+                                        updateGraphForAnalytic();
+                                    }}
+                                    disabled={loading}
+                                    style={{
+                                        padding: '8px 16px',
+                                        background: 'var(--btn-bg)',
+                                        color: 'var(--btn-text)',
+                                        border: '1px solid var(--border)',
+                                        whiteSpace: 'nowrap',
+                                        opacity: loading ? 0.6 : 1,
+                                        cursor: loading ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {loading ? 'Загрузка...' : 'Обновить график'}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })()}
+
+                {/* Graph Parameters for COMPOSITE functions */}
+                {functionData && functionData.summary.type === 'COMPOSITE' && (
                     <div>
-                        <h3 style={{ color: 'var(--text)', marginTop: 0, marginBottom: '15px' }}>Параметры графика</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
+                        <h3 style={{ color: 'var(--text)', marginTop: 0, marginBottom: '15px' }}>Параметры графика композитной функции</h3>
+
+                        {/* Info about components */}
+                        {functionData.components && functionData.components.length > 0 && (
+                            <div style={{
+                                padding: '12px',
+                                marginBottom: '15px',
+                                background: 'rgba(59, 130, 246, 0.1)',
+                                border: '1px solid rgba(59, 130, 246, 0.5)',
+                                borderRadius: '4px',
+                                color: 'var(--text)',
+                                fontSize: '14px'
+                            }}>
+                                ℹ️ Композитная функция из {functionData.components.length} компонент(ов).
+                                <br />
+                                <span style={{ color: 'var(--muted)', fontSize: '12px' }}>
+                                    Вычисление: для каждого x применяются компоненты последовательно.
+                                </span>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
                             <div>
                                 <label style={{ color: 'var(--text)', display: 'block', marginBottom: '8px', fontSize: '14px' }}>
                                     x от:
@@ -478,7 +821,13 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
                                     value={xFrom}
                                     onChange={(e) => setXFrom(e.target.value)}
                                     step="any"
-                                    style={{ width: '100%', padding: '8px', background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--border)' }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px',
+                                        background: 'var(--input-bg)',
+                                        color: 'var(--input-text)',
+                                        border: '1px solid var(--border)'
+                                    }}
                                 />
                             </div>
                             <div>
@@ -490,38 +839,46 @@ export function FunctionGraphModal({ isOpen, onClose }: FunctionGraphModalProps)
                                     value={xTo}
                                     onChange={(e) => setXTo(e.target.value)}
                                     step="any"
-                                    style={{ width: '100%', padding: '8px', background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--border)' }}
-                                />
-                            </div>
-                            <div>
-                                <label style={{ color: 'var(--text)', display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                                    Количество точек:
-                                </label>
-                                <input
-                                    type="number"
-                                    value={numPoints}
-                                    onChange={(e) => setNumPoints(e.target.value)}
-                                    min="2"
-                                    max="10000"
-                                    style={{ width: '100%', padding: '8px', background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--border)' }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px',
+                                        background: 'var(--input-bg)',
+                                        color: 'var(--input-text)',
+                                        border: '1px solid var(--border)'
+                                    }}
                                 />
                             </div>
                             <button
-                                onClick={() => updateGraph()}
-                                disabled={loading}
+                                onClick={updateGraphForComposite}
+                                disabled={compositeLoading}
                                 style={{
                                     padding: '8px 16px',
                                     background: 'var(--btn-bg)',
                                     color: 'var(--btn-text)',
                                     border: '1px solid var(--border)',
                                     whiteSpace: 'nowrap',
-                                    opacity: loading ? 0.6 : 1,
-                                    cursor: loading ? 'not-allowed' : 'pointer'
+                                    opacity: compositeLoading ? 0.6 : 1,
+                                    cursor: compositeLoading ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                {loading ? 'Загрузка...' : 'Обновить график'}
+                                {compositeLoading ? 'Вычисление...' : 'Обновить график'}
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {/* Domain display for TABULATED functions */}
+                {functionData && functionData.summary.type === 'TABULATED' && getDomainDisplay() && (
+                    <div style={{
+                        padding: '12px',
+                        background: 'var(--card)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '4px',
+                        color: 'var(--text)',
+                        fontSize: '14px',
+                        fontWeight: 500
+                    }}>
+                        {getDomainDisplay()}
                     </div>
                 )}
 

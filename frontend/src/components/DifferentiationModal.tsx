@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { FunctionTable } from './FunctionTable';
 import { FunctionListModal } from './FunctionListModal';
@@ -21,6 +21,15 @@ export function DifferentiationModal({ isOpen, onClose, factoryKey }: Differenti
     const [sourceFunction, setSourceFunction] = useState<Point[]>([]);
     const [result, setResult] = useState<Point[]>([]);
     const [showFunctionList, setShowFunctionList] = useState(false);
+
+    // Сброс состояния при закрытии модального окна
+    useEffect(() => {
+        if (!isOpen) {
+            setSourceFunction([]);
+            setResult([]);
+            setShowFunctionList(false);
+        }
+    }, [isOpen]);
 
     const handleLoadClick = () => {
         setShowFunctionList(true);

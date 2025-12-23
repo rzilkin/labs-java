@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { FunctionTable } from './FunctionTable';
 import { FunctionListModal } from './FunctionListModal';
@@ -27,6 +27,16 @@ export function OperationsModal({ isOpen, onClose, factoryKey }: OperationsModal
     const [rightOperand, setRightOperand] = useState<FunctionData | null>(null);
     const [result, setResult] = useState<Point[]>([]);
     const [showFunctionList, setShowFunctionList] = useState<'left' | 'right' | null>(null);
+
+    // Сброс состояния при закрытии модального окна
+    useEffect(() => {
+        if (!isOpen) {
+            setLeftOperand(null);
+            setRightOperand(null);
+            setResult([]);
+            setShowFunctionList(null);
+        }
+    }, [isOpen]);
 
     const handleLoadClick = (operand: 'left' | 'right') => {
         setShowFunctionList(operand);

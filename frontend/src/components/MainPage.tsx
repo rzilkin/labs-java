@@ -29,6 +29,9 @@ interface FunctionFull {
     components?: number[];
 }
 
+// Cache for function expressions (for composition preview)
+const functionExpressionCache = new Map<number, string>();
+
 interface MainPageProps {
     onOpenSettings: () => void;
     onOpenOperations: () => void;
@@ -295,6 +298,94 @@ export function MainPage({
                 return [...prev, id];
             }
         });
+    };
+
+    const handleCompositeMoveUp = (index: number) => {
+        if (index === 0) return;
+        setCompositeSelectedIds(prev => {
+            const newIds = [...prev];
+            [newIds[index - 1], newIds[index]] = [newIds[index], newIds[index - 1]];
+            return newIds;
+        });
+    };
+
+    const handleCompositeMoveDown = (index: number) => {
+        setCompositeSelectedIds(prev => {
+            if (index >= prev.length - 1) return prev;
+            const newIds = [...prev];
+            [newIds[index], newIds[index + 1]] = [newIds[index + 1], newIds[index]];
+            return newIds;
+        });
+    };
+
+    const handleCompositeRemove = (index: number) => {
+        setCompositeSelectedIds(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // Get function display name for composition preview
+    const getFunctionDisplayName = (funcId: number): string => {
+        const func = functions.find(f => f.id === funcId);
+        if (!func) return `f${funcId}`;
+        
+        // Check cache for expression
+        const cachedExpr = functionExpressionCache.get(funcId);
+        if (cachedExpr) {
+            return cachedExpr;
+        }
+        
+        // For display, use name or try to fetch expression
+        return func.name;
+    };
+
+    // Load function expression for preview (async)
+    const loadFunctionExpression = async (funcId: number) => {
+        if (functionExpressionCache.has(funcId)) return;
+        
+        try {
+            const funcData = await getJson<FunctionFull>(`/api/v1/functions/${funcId}`);
+            if (funcData.analyticExpression) {
+                functionExpressionCache.set(funcId, funcData.analyticExpression);
+            } else {
+                functionExpressionCache.set(funcId, funcData.summary.name);
+            }
+        } catch {
+            // Ignore errors, use name as fallback
+        }
+    };
+
+    // Load expressions for all selected components
+    useEffect(() => {
+        compositeSelectedIds.forEach(id => {
+            loadFunctionExpression(id);
+        });
+    }, [compositeSelectedIds]);
+
+    // Generate composition preview string
+    const getCompositionPreview = (): string => {
+        if (compositeSelectedIds.length === 0) return '';
+        if (compositeSelectedIds.length === 1) {
+            const name = getFunctionDisplayName(compositeSelectedIds[0]);
+            return `f(x) = ${name}(x)`;
+        }
+
+        // Build nested composition: f_n(...f_2(f_1(x))...)
+        // Components are applied in order: first component gets x, its result goes to second, etc.
+        let result = 'x';
+        for (let i = 0; i < compositeSelectedIds.length; i++) {
+            const func = functions.find(f => f.id === compositeSelectedIds[i]);
+            const expr = functionExpressionCache.get(compositeSelectedIds[i]);
+            
+            if (expr && func?.type === 'ANALYTIC') {
+                // Replace 'x' in expression with current result
+                // Simple replacement for preview
+                result = expr.replace(/\bx\b/g, `(${result})`);
+            } else {
+                const name = func?.name || `f${compositeSelectedIds[i]}`;
+                result = `${name}(${result})`;
+            }
+        }
+
+        return `f(x) = ${result}`;
     };
 
     const handleDeleteAllFunctions = async () => {
@@ -672,8 +763,11 @@ export function MainPage({
                         {/* COMPOSITE Form */}
                         {creationType === 'COMPOSITE' && (
                             <div style={{ marginBottom: '20px' }}>
-                                <label style={{ color: 'var(--text)', display: 'block', marginBottom: '8px' }}>Выберите компоненты (минимум 2):</label>
-                                <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '4px', padding: '10px' }}>
+                                {/* Available Functions to Select */}
+                                <label style={{ color: 'var(--text)', display: 'block', marginBottom: '8px' }}>
+                                    Выберите компоненты (минимум 2):
+                                </label>
+                                <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '4px', padding: '10px', marginBottom: '15px' }}>
                                     {functions.length === 0 ? (
                                         <div style={{ color: 'var(--text)' }}>Нет доступных функций</div>
                                     ) : (
@@ -702,9 +796,160 @@ export function MainPage({
                                         ))
                                     )}
                                 </div>
+
+                                {/* Ordered Component List */}
                                 {compositeSelectedIds.length > 0 && (
-                                    <div style={{ marginTop: '10px', color: 'var(--muted)', fontSize: '14px' }}>
-                                        Выбрано компонентов: {compositeSelectedIds.length}
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <label style={{ color: 'var(--text)', display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                                            Порядок применения функций:
+                                        </label>
+                                        <div style={{ 
+                                            padding: '10px', 
+                                            background: 'rgba(59, 130, 246, 0.1)', 
+                                            border: '1px solid rgba(59, 130, 246, 0.3)', 
+                                            borderRadius: '4px',
+                                            marginBottom: '10px',
+                                            fontSize: '13px',
+                                            color: 'var(--text)'
+                                        }}>
+                                            ℹ️ Функции применяются последовательно: результат первой функции подаётся на вход второй, и т.д.
+                                        </div>
+                                        
+                                        <div style={{ border: '1px solid var(--border)', borderRadius: '4px', padding: '10px' }}>
+                                            {compositeSelectedIds.map((id, index) => {
+                                                const func = functions.find(f => f.id === id);
+                                                const expr = functionExpressionCache.get(id);
+                                                return (
+                                                    <div
+                                                        key={`${id}-${index}`}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '10px',
+                                                            padding: '10px',
+                                                            marginBottom: index < compositeSelectedIds.length - 1 ? '8px' : '0',
+                                                            background: 'var(--card)',
+                                                            border: '1px solid var(--border)',
+                                                            borderRadius: '4px',
+                                                        }}
+                                                    >
+                                                        <span style={{ 
+                                                            color: 'var(--btn-bg)', 
+                                                            fontWeight: 'bold',
+                                                            minWidth: '24px',
+                                                            textAlign: 'center'
+                                                        }}>
+                                                            {index + 1}
+                                                        </span>
+                                                        <div style={{ flex: 1, color: 'var(--text)' }}>
+                                                            <div style={{ fontWeight: 500 }}>
+                                                                {func?.name || `ID: ${id}`}
+                                                            </div>
+                                                            {expr && func?.type === 'ANALYTIC' && (
+                                                                <div style={{ fontSize: '12px', color: 'var(--muted)', fontFamily: 'monospace' }}>
+                                                                    {expr}
+                                                                </div>
+                                                            )}
+                                                            {func?.type === 'TABULATED' && (
+                                                                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                                                                    (табулированная)
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                                            <button
+                                                                onClick={() => handleCompositeMoveUp(index)}
+                                                                disabled={index === 0}
+                                                                title="Переместить вверх"
+                                                                style={{
+                                                                    padding: '6px 10px',
+                                                                    background: 'var(--btn2-bg)',
+                                                                    color: 'var(--btn2-text)',
+                                                                    border: '1px solid var(--border)',
+                                                                    cursor: index === 0 ? 'not-allowed' : 'pointer',
+                                                                    opacity: index === 0 ? 0.4 : 1,
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '14px'
+                                                                }}
+                                                            >
+                                                                ↑
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleCompositeMoveDown(index)}
+                                                                disabled={index === compositeSelectedIds.length - 1}
+                                                                title="Переместить вниз"
+                                                                style={{
+                                                                    padding: '6px 10px',
+                                                                    background: 'var(--btn2-bg)',
+                                                                    color: 'var(--btn2-text)',
+                                                                    border: '1px solid var(--border)',
+                                                                    cursor: index === compositeSelectedIds.length - 1 ? 'not-allowed' : 'pointer',
+                                                                    opacity: index === compositeSelectedIds.length - 1 ? 0.4 : 1,
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '14px'
+                                                                }}
+                                                            >
+                                                                ↓
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleCompositeRemove(index)}
+                                                                title="Удалить"
+                                                                style={{
+                                                                    padding: '6px 10px',
+                                                                    background: '#dc2626',
+                                                                    color: 'white',
+                                                                    border: '1px solid #dc2626',
+                                                                    cursor: 'pointer',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '14px'
+                                                                }}
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Composition Preview */}
+                                        {compositeSelectedIds.length >= 2 && (
+                                            <div style={{ 
+                                                marginTop: '15px',
+                                                padding: '15px',
+                                                background: 'var(--card)',
+                                                border: '2px solid var(--btn-bg)',
+                                                borderRadius: '8px'
+                                            }}>
+                                                <div style={{ 
+                                                    color: 'var(--muted)', 
+                                                    fontSize: '12px', 
+                                                    marginBottom: '8px',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px'
+                                                }}>
+                                                    Результат композиции:
+                                                </div>
+                                                <div style={{ 
+                                                    color: 'var(--text)', 
+                                                    fontSize: '16px',
+                                                    fontFamily: 'monospace',
+                                                    wordBreak: 'break-word',
+                                                    lineHeight: '1.5'
+                                                }}>
+                                                    {getCompositionPreview()}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div style={{ marginTop: '10px', color: 'var(--muted)', fontSize: '13px' }}>
+                                            Выбрано компонентов: {compositeSelectedIds.length}
+                                            {compositeSelectedIds.length < 2 && (
+                                                <span style={{ color: '#dc2626', marginLeft: '10px' }}>
+                                                    (необходимо минимум 2)
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>

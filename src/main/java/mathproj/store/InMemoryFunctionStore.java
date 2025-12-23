@@ -25,21 +25,28 @@ public class InMemoryFunctionStore {
 
         for (FunctionFullDto f : functions.values()) {
             FunctionSummaryDto sum = f.getSummary();
-            if (sum == null) continue;
-            if (!Objects.equals(sum.getOwnerId(), ownerId)) continue;
-            if (t != null && !t.equalsIgnoreCase(sum.getType())) continue;
-            if (s != null && (sum.getName() == null || !sum.getName().toLowerCase().contains(s))) continue;
+            if (sum == null)
+                continue;
+            if (!Objects.equals(sum.getOwnerId(), ownerId))
+                continue;
+            if (t != null && !t.equalsIgnoreCase(sum.getType()))
+                continue;
+            if (s != null && (sum.getName() == null || !sum.getName().toLowerCase().contains(s)))
+                continue;
             out.add(sum);
         }
 
-        out.sort(Comparator.comparing(FunctionSummaryDto::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+        out.sort(Comparator.comparing(FunctionSummaryDto::getCreatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
         return out;
     }
 
     public FunctionFullDto get(long ownerId, long id) {
         FunctionFullDto f = functions.get(id);
-        if (f == null) throw new NoSuchElementException("Не найдено");
-        if (!Objects.equals(f.getSummary().getOwnerId(), ownerId)) throw new SecurityException("Запрещено");
+        if (f == null)
+            throw new NoSuchElementException("Не найдено");
+        if (!Objects.equals(f.getSummary().getOwnerId(), ownerId))
+            throw new SecurityException("Запрещено");
         return f;
     }
 
@@ -49,7 +56,8 @@ public class InMemoryFunctionStore {
     }
 
     public FunctionSummaryDto rename(long ownerId, long id, String name) {
-        if (name == null || name.isBlank()) throw new IllegalArgumentException("Поле name обязательно");
+        if (name == null || name.isBlank())
+            throw new IllegalArgumentException("Поле name обязательно");
         FunctionFullDto f = get(ownerId, id);
         f.getSummary().setName(name);
         return f.getSummary();
@@ -63,8 +71,7 @@ public class InMemoryFunctionStore {
         long datasetId = datasetSeq.getAndIncrement();
 
         FunctionSummaryDto summary = new FunctionSummaryDto(
-                id, name, "ANALYTIC", ownerId, datasetId, "MANUAL", Instant.now()
-        );
+                id, name, "ANALYTIC", ownerId, datasetId, "MANUAL", Instant.now());
 
         FunctionFullDto full = new FunctionFullDto();
         full.setSummary(summary);
@@ -77,7 +84,8 @@ public class InMemoryFunctionStore {
     }
 
     public FunctionFullDto updateAnalytic(long ownerId, long id, String expression) {
-        if (expression == null || expression.isBlank()) throw new IllegalArgumentException("Поле expression обязательно");
+        if (expression == null || expression.isBlank())
+            throw new IllegalArgumentException("Поле expression обязательно");
         FunctionFullDto f = get(ownerId, id);
         if (!"ANALYTIC".equalsIgnoreCase(f.getSummary().getType())) {
             throw new IllegalArgumentException("Функция не является аналитической");
@@ -94,8 +102,7 @@ public class InMemoryFunctionStore {
         long datasetId = datasetSeq.getAndIncrement();
 
         FunctionSummaryDto summary = new FunctionSummaryDto(
-                id, name, "TABULATED", ownerId, datasetId, "MANUAL", Instant.now()
-        );
+                id, name, "TABULATED", ownerId, datasetId, "MANUAL", Instant.now());
 
         FunctionFullDto full = new FunctionFullDto();
         full.setSummary(summary);
@@ -107,9 +114,12 @@ public class InMemoryFunctionStore {
         return full;
     }
 
-    public FunctionFullDto createTabulatedFromFunction(long ownerId, String name, long sourceFunctionId, int count, double from, double to) {
-        if (name == null || name.isBlank()) throw new IllegalArgumentException("Поле name обязательно");
-        if (count < 2) throw new IllegalArgumentException("Количество точек должно быть >= 2");
+    public FunctionFullDto createTabulatedFromFunction(long ownerId, String name, long sourceFunctionId, int count,
+            double from, double to) {
+        if (name == null || name.isBlank())
+            throw new IllegalArgumentException("Поле name обязательно");
+        if (count < 2)
+            throw new IllegalArgumentException("Количество точек должно быть >= 2");
 
         get(ownerId, sourceFunctionId);
 
@@ -124,8 +134,7 @@ public class InMemoryFunctionStore {
         long id = fnSeq.getAndIncrement();
         long datasetId = datasetSeq.getAndIncrement();
         FunctionSummaryDto summary = new FunctionSummaryDto(
-                id, name, "TABULATED", ownerId, datasetId, "GENERATED", Instant.now()
-        );
+                id, name, "TABULATED", ownerId, datasetId, "GENERATED", Instant.now());
 
         FunctionFullDto full = new FunctionFullDto();
         full.setSummary(summary);
@@ -141,13 +150,13 @@ public class InMemoryFunctionStore {
         if (name == null || name.isBlank() || componentIds == null || componentIds.isEmpty()) {
             throw new IllegalArgumentException("Поле name и список компонентов обязательны");
         }
-        for (Long cid : componentIds) get(ownerId, cid);
+        for (Long cid : componentIds)
+            get(ownerId, cid);
 
         long id = fnSeq.getAndIncrement();
         long datasetId = datasetSeq.getAndIncrement();
         FunctionSummaryDto summary = new FunctionSummaryDto(
-                id, name, "COMPOSITE", ownerId, datasetId, "MANUAL", Instant.now()
-        );
+                id, name, "COMPOSITE", ownerId, datasetId, "MANUAL", Instant.now());
 
         FunctionFullDto full = new FunctionFullDto();
         full.setSummary(summary);
@@ -188,8 +197,7 @@ public class InMemoryFunctionStore {
         long datasetId = datasetSeq.getAndIncrement();
 
         FunctionSummaryDto summary = new FunctionSummaryDto(
-                id, name, "TABULATED", ownerId, datasetId, sourceType, Instant.now()
-        );
+                id, name, "TABULATED", ownerId, datasetId, sourceType, Instant.now());
 
         FunctionFullDto full = new FunctionFullDto();
         full.setSummary(summary);
@@ -202,11 +210,11 @@ public class InMemoryFunctionStore {
     }
 
     private String norm(String v) {
-        if (v == null) return null;
+        if (v == null)
+            return null;
         String t = v.trim();
-        if (t.isEmpty()) return null;
+        if (t.isEmpty())
+            return null;
         return t.toLowerCase();
     }
 }
-
-
