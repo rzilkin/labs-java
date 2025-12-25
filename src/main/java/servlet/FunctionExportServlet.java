@@ -1,6 +1,7 @@
 package servlet;
 
 import dto.FunctionFullDto;
+import dto.FunctionResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,7 +42,7 @@ public class FunctionExportServlet extends BaseApiServlet {
             FunctionFullDto dto = functionService.exportFunction(id, userId);
             resp.setStatus(HttpServletResponse.SC_OK);
             try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(dto));
+                writer.write(gson.toJson(FunctionResponse.fromFullDto(dto)));
             }
             logger.info("Экспортирована функция {} пользователем {} за {} мс",
                     id, userId, System.currentTimeMillis() - start);

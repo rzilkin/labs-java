@@ -1,8 +1,6 @@
 package servlet;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import dto.FunctionFullDto;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,7 +10,6 @@ import service.FunctionService;
 import service.ServiceLocator;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
 @WebServlet(name = "AnalyticFunctionUpdateServlet", urlPatterns = "/api/v1/functions/analytic/*")
@@ -54,11 +51,8 @@ public class AnalyticFunctionUpdateServlet extends BaseApiServlet {
         }
 
         try {
-            FunctionFullDto updated = functionService.updateAnalyticExpression(id, userId, body.expression);
+            functionService.updateAnalyticExpression(id, userId, body.expression);
             resp.setStatus(HttpServletResponse.SC_OK);
-            try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(updated));
-            }
             logger.info("Обновлена аналитическая функция {} пользователем {} за {} мс",
                     id, userId, System.currentTimeMillis() - start);
         } catch (IllegalArgumentException e) {

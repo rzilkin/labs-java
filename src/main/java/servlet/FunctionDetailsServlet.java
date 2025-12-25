@@ -2,7 +2,7 @@ package servlet;
 
 import com.google.gson.JsonSyntaxException;
 import dto.FunctionFullDto;
-import dto.FunctionSummaryDto;
+import dto.FunctionResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -54,7 +54,7 @@ public class FunctionDetailsServlet extends BaseApiServlet {
                 FunctionFullDto dto = functionService.exportFunction(pathInfo.id, userId);
                 resp.setStatus(HttpServletResponse.SC_OK);
                 try (PrintWriter writer = resp.getWriter()) {
-                    writer.write(gson.toJson(dto));
+                    writer.write(gson.toJson(FunctionResponse.fromFullDto(dto)));
                 }
                 logger.info("Экспортирована функция {} за {} мс", pathInfo.id, System.currentTimeMillis() - start);
             } else if (pathInfo.subPath == null) {
@@ -62,7 +62,7 @@ public class FunctionDetailsServlet extends BaseApiServlet {
                 FunctionFullDto dto = functionService.findByIdAndOwner(pathInfo.id, userId);
                 resp.setStatus(HttpServletResponse.SC_OK);
                 try (PrintWriter writer = resp.getWriter()) {
-                    writer.write(gson.toJson(dto));
+                    writer.write(gson.toJson(FunctionResponse.fromFullDto(dto)));
                 }
                 logger.info("Получены детали функции {} за {} мс", pathInfo.id, System.currentTimeMillis() - start);
             } else {
@@ -161,11 +161,8 @@ public class FunctionDetailsServlet extends BaseApiServlet {
                     sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "name is required");
                     return;
                 }
-                FunctionSummaryDto updated = functionService.updateName(pathInfo.id, userId, body.name);
+                functionService.updateName(pathInfo.id, userId, body.name);
                 resp.setStatus(HttpServletResponse.SC_OK);
-                try (PrintWriter writer = resp.getWriter()) {
-                    writer.write(gson.toJson(updated));
-                }
                 logger.info("Обновлено имя функции {} за {} мс", pathInfo.id, System.currentTimeMillis() - start);
             } else {
                 sendErrorResponse(req, resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED,

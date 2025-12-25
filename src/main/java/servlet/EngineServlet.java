@@ -26,7 +26,7 @@ public class EngineServlet extends BaseApiServlet {
         String engine = mapEngineToSpec(operationService.getEngine());
         resp.setStatus(HttpServletResponse.SC_OK);
         try (PrintWriter writer = resp.getWriter()) {
-            writer.write(engine);
+            writer.write("\"" + engine + "\"");
         }
         logger.info("Текущий движок табулирования: {}", engine);
     }
@@ -64,9 +64,6 @@ public class EngineServlet extends BaseApiServlet {
             operationService.setEngine(internalEngine);
             String currentEngine = mapEngineToSpec(operationService.getEngine());
             resp.setStatus(HttpServletResponse.SC_OK);
-            try (PrintWriter writer = resp.getWriter()) {
-                writer.write(currentEngine);
-            }
             logger.info("Пользователь {} обновил движок табулирования на {}", userId, currentEngine);
         } catch (IllegalArgumentException e) {
             logger.warn("Ошибка обновления движка", e);

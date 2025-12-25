@@ -2,6 +2,7 @@ package servlet;
 
 import com.google.gson.JsonSyntaxException;
 import dto.FunctionFullDto;
+import dto.FunctionResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,7 +35,8 @@ public class FunctionImportServlet extends BaseApiServlet {
 
         FunctionFullDto importData;
         try {
-            importData = gson.fromJson(req.getReader(), FunctionFullDto.class);
+            FunctionResponse body = gson.fromJson(req.getReader(), FunctionResponse.class);
+            importData = body == null ? null : body.toFullDto();
         } catch (JsonSyntaxException e) {
             logger.warn("Некорректный JSON при импорте функции", e);
             sendErrorResponse(req, resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid JSON");
@@ -50,7 +52,7 @@ public class FunctionImportServlet extends BaseApiServlet {
             FunctionFullDto created = functionService.importFunction(userId, importData);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(created));
+                writer.write(gson.toJson(FunctionResponse.fromFullDto(created)));
             }
             logger.info("Импортирована функция {} пользователем {} за {} мс",
                     created.getId(), userId, System.currentTimeMillis() - start);

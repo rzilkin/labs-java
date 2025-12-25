@@ -1,6 +1,7 @@
 package servlet;
 
 import com.google.gson.Gson;
+import dto.FunctionResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,7 +45,7 @@ public class DifferentiationServlet extends BaseApiServlet {
             var dto = functionService.findByIdAndOwner(created.getId(), userId);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(dto));
+                writer.write(gson.toJson(FunctionResponse.fromFullDto(dto)));
             }
             logger.info("Построена производная функции {} пользователем {} за {} мс",
                     functionId, userId, System.currentTimeMillis() - start);

@@ -3,6 +3,7 @@ package servlet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dto.FunctionFullDto;
+import dto.FunctionResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -52,7 +53,7 @@ public class CompositeFunctionCreateServlet extends BaseApiServlet {
             FunctionFullDto dto = functionService.createComposite(userId, body.name, body.componentIds);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(dto));
+                writer.write(gson.toJson(FunctionResponse.fromFullDto(dto)));
             }
             logger.info("Создана составная функция {} пользователем {} за {} мс",
                     dto.getId(), userId, System.currentTimeMillis() - start);

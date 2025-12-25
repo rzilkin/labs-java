@@ -83,9 +83,6 @@ public class MetricsServlet extends BaseApiServlet {
         try {
             PerformanceMetrics saved = metricsService.saveMetric(body);
             resp.setStatus(HttpServletResponse.SC_CREATED);
-            try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(saved));
-            }
             logger.info("Сохранена метрика {}", saved.getId());
         } catch (Exception e) {
             logger.error("Ошибка сохранения метрики: {}", e.getMessage(), e);

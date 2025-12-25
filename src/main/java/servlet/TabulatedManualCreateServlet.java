@@ -3,6 +3,7 @@ package servlet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dto.FunctionFullDto;
+import dto.FunctionResponse;
 import dto.PointDto;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,7 +56,7 @@ public class TabulatedManualCreateServlet extends BaseApiServlet {
             FunctionFullDto created = functionService.createTabulatedManual(userId, body.name, body.points);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(created));
+                writer.write(gson.toJson(FunctionResponse.fromFullDto(created)));
             }
             logger.info("Создана табулированная функция {} пользователем {} за {} мс", created.getId(),
                     userId, System.currentTimeMillis() - start);

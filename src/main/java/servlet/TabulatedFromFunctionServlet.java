@@ -3,6 +3,7 @@ package servlet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dto.FunctionFullDto;
+import dto.FunctionResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -82,7 +83,7 @@ public class TabulatedFromFunctionServlet extends BaseApiServlet {
                     body.to);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(created));
+                writer.write(gson.toJson(FunctionResponse.fromFullDto(created)));
             }
             logger.info("Создана табулированная функция {} из функции {} пользователем {} за {} мс",
                     created.getId(), body.sourceFunctionId, userId, System.currentTimeMillis() - start);

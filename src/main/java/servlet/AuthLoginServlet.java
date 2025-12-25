@@ -1,6 +1,5 @@
 package servlet;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dto.User;
 import jakarta.servlet.annotation.WebServlet;
@@ -12,10 +11,8 @@ import service.AuthService;
 import service.ServiceLocator;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Map;
 
 @WebServlet(name = "AuthLoginServlet", urlPatterns = "/api/v1/auth/login")
 public class AuthLoginServlet extends BaseApiServlet {
@@ -25,29 +22,21 @@ public class AuthLoginServlet extends BaseApiServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
-
         Credentials credentials = extractCredentials(req);
         if (credentials == null) {
-            sendErrorResponse(req, resp, HttpServletResponse.SC_UNAUTHORIZED, "Credentials are missing or invalid");
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
         User user = authService.login(credentials.username, credentials.password);
         if (user == null) {
             logger.warn("Неуспешная попытка входа пользователя {}", credentials.username);
-            sendErrorResponse(req, resp, HttpServletResponse.SC_UNAUTHORIZED, "Invalid username or password");
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
         logger.info("Пользователь {} успешно вошёл", user.getUsername());
         resp.setStatus(HttpServletResponse.SC_OK);
-        try (PrintWriter writer = resp.getWriter()) {
-            writer.write(gson.toJson(Map.of(
-                    "id", user.getId(),
-                    "username", user.getUsername())));
-        }
     }
 
     private Credentials extractCredentials(HttpServletRequest req) {

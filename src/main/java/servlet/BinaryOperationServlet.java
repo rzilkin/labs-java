@@ -3,6 +3,7 @@ package servlet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dto.FunctionFullDto;
+import dto.FunctionResponse;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -69,7 +70,7 @@ public class BinaryOperationServlet extends BaseApiServlet {
             FunctionFullDto dto = functionService.findByIdAndOwner(created.getId(), userId);
             resp.setStatus(HttpServletResponse.SC_CREATED);
             try (PrintWriter writer = resp.getWriter()) {
-                writer.write(gson.toJson(dto));
+                writer.write(gson.toJson(FunctionResponse.fromFullDto(dto)));
             }
             logger.info("Выполнена операция {} пользователем {} за {} мс", normalizedOp, userId,
                     System.currentTimeMillis() - start);
