@@ -34,6 +34,11 @@ public class BasicAuthFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
+        if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String path = httpRequest.getRequestURI();
         if (path.endsWith("/api/v1/auth/register") || path.endsWith("/api/v1/auth/login")) {
             chain.doFilter(request, response);
